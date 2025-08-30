@@ -1,0 +1,9 @@
+# Entorno virtual
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Configuración local y secretos
+.env
+.vscode/
