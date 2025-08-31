@@ -1,16 +1,16 @@
+# services/groq_client.py
 import requests, json
 from core.config import settings
-from core.prompts import MENU_DIARIO_PROMPT
 
-def generate_menu_with_groq(calories, macros, preferencias, restricciones):
+def generate_menu_with_groq(calories, macros, preferencias, restricciones, prompt_template):
     preferencias_text = ', '.join(preferencias) if preferencias else 'ninguna'
     restricciones_text = ', '.join(restricciones) if restricciones else 'ninguna'
 
-    prompt = MENU_DIARIO_PROMPT.format(
+    prompt = prompt_template.format(
         calories=round(calories),
-        carbs=round(macros['carbohidratos_g']),
-        proteins=round(macros['proteinas_g']),
-        fats=round(macros['grasas_g']),
+        carbs=round(macros.get('carbohidratos_g', 0)),
+        proteins=round(macros.get('proteinas_g', 0)),
+        fats=round(macros.get('grasas_g', 0)),
         preferencias=preferencias_text,
         restricciones=restricciones_text
     )
