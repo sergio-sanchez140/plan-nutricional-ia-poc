@@ -18,7 +18,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\"nombre\": \"Sergio\", \"edad\": 29, \"genero\": \"hombre\"}",
+					"raw": "{\r\n    \"nombre\": \"Sergio\",\r\n    \"email\": \"sergio@example.com\"\r\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -41,6 +41,45 @@
 					]
 				},
 				"description": "Generated from cURL: curl -X POST \"http://127.0.0.1:8000/db/users\" \\\r\n  -H \"Content-Type: application/json\" \\\r\n  -d '{\"nombre\": \"Sergio\", \"edad\": 29, \"genero\": \"hombre\"}'\r\n"
+			},
+			"response": []
+		},
+		{
+			"name": "Update User",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"edad\": 29,\r\n    \"peso\": 75.5,\r\n    \"altura\": 180,\r\n    \"genero\": \"hombre\",\r\n    \"nivel_actividad\": \"moderado\",\r\n    \"objetivo\": \"mantener\",\r\n    \"preferencias\": [\"pollo\", \"arroz\"],\r\n    \"restricciones\": [\"gluten\"]\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://127.0.0.1:8000/db/users/sergio@example.com",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"db",
+						"users",
+						"sergio@example.com"
+					]
+				},
+				"description": "Generated from cURL: curl --location --request PUT 'http://127.0.0.1:8000/db/users/sergio@example.com' \\\r\n--header 'Content-Type: application/json' \\\r\n--data-raw '{\r\n    \"edad\": 29,\r\n    \"peso\": 75.5,\r\n    \"altura\": 180,\r\n    \"genero\": \"hombre\",\r\n    \"nivel_actividad\": \"moderado\",\r\n    \"objetivo\": \"mantener\",\r\n    \"preferencias\": [\"pollo\", \"arroz\"],\r\n    \"restricciones\": [\"gluten\"]\r\n}'\r\n"
 			},
 			"response": []
 		},
@@ -80,7 +119,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n        \"user_id\": 1,\r\n        \"tipo\": \"daily\",\r\n        \"calorias\": 2500,\r\n        \"macros\": {\"carbohidratos_g\": 300, \"proteinas_g\": 150, \"grasas_g\": 80},\r\n        \"menu\": {\"desayuno\": \"200 gr de avena\", \"comida\": \"200 gr de pollo\", \"cena\": \"150 gr de arroz\"}\r\n      }",
+					"raw": "{\r\n  \"user_id\": 1,\r\n  \"tipo\": \"daily\",\r\n  \"calorias\": 2200,\r\n  \"macros\": {\r\n    \"carbohidratos_g\": 250,\r\n    \"proteinas_g\": 150,\r\n    \"grasas_g\": 70\r\n  },\r\n  \"menu\": {\r\n    \"desayuno\": {\r\n      \"avena\": \"100 gr\",\r\n      \"leche\": \"200 ml\",\r\n      \"banana\": \"1 unidad\"\r\n    },\r\n    \"comida\": {\r\n      \"pechuga\": \"200 gr\",\r\n      \"arroz\": \"150 gr\",\r\n      \"ensalada\": \"100 gr\"\r\n    },\r\n    \"cena\": {\r\n      \"pescado\": \"150 gr\",\r\n      \"verduras\": \"200 gr\"\r\n    }\r\n  }\r\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -151,7 +190,7 @@
 					}
 				},
 				"url": {
-					"raw": "http://127.0.0.1:8000/plan-nutricional-daily",
+					"raw": "http://127.0.0.1:8000/nutrition/plan-nutricional-daily",
 					"protocol": "http",
 					"host": [
 						"127",
@@ -161,6 +200,7 @@
 					],
 					"port": "8000",
 					"path": [
+						"nutrition",
 						"plan-nutricional-daily"
 					]
 				},
@@ -188,7 +228,7 @@
 					}
 				},
 				"url": {
-					"raw": "http://127.0.0.1:8000/plan-nutricional-weekly",
+					"raw": "http://127.0.0.1:8000/nutrition/plan-nutricional-weekly",
 					"protocol": "http",
 					"host": [
 						"127",
@@ -198,6 +238,7 @@
 					],
 					"port": "8000",
 					"path": [
+						"nutrition",
 						"plan-nutricional-weekly"
 					]
 				},
@@ -225,7 +266,7 @@
 					}
 				},
 				"url": {
-					"raw": "http://127.0.0.1:8000/plan-nutricional-monthly",
+					"raw": "http://127.0.0.1:8000/nutrition/plan-nutricional-monthly",
 					"protocol": "http",
 					"host": [
 						"127",
@@ -235,6 +276,7 @@
 					],
 					"port": "8000",
 					"path": [
+						"nutrition",
 						"plan-nutricional-monthly"
 					]
 				},
@@ -262,7 +304,7 @@
 					}
 				},
 				"url": {
-					"raw": "http://127.0.0.1:8000/snacks-dailys",
+					"raw": "http://127.0.0.1:8000/nutrition/snacks-dailys",
 					"protocol": "http",
 					"host": [
 						"127",
@@ -272,6 +314,7 @@
 					],
 					"port": "8000",
 					"path": [
+						"nutrition",
 						"snacks-dailys"
 					]
 				},
@@ -285,7 +328,7 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://127.0.0.1:8000/substitutions?alimento=pollo",
+					"raw": "http://127.0.0.1:8000/nutrition/substitutions?alimento=pollo",
 					"protocol": "http",
 					"host": [
 						"127",
@@ -295,6 +338,7 @@
 					],
 					"port": "8000",
 					"path": [
+						"nutrition",
 						"substitutions"
 					],
 					"query": [
