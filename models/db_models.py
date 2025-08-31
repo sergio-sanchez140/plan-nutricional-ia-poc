@@ -1,0 +1,34 @@
+from sqlalchemy import Column, Integer, String, Float, JSON, DateTime, func, ForeignKey
+from sqlalchemy.orm import relationship
+from db.database import Base
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    nombre = Column(String, nullable=False)
+    edad = Column(Integer, nullable=False)
+    genero = Column(String, nullable=False)
+
+    peso = Column(Float, nullable=True)
+    altura = Column(Float, nullable=True)
+    nivel_actividad = Column(String, nullable=True)
+    objetivo = Column(String, nullable=True)
+    preferencias = Column(JSON, nullable=True)
+    restricciones = Column(JSON, nullable=True)
+
+    plans = relationship("NutritionPlan", back_populates="user")
+
+
+class NutritionPlan(Base):
+    __tablename__ = "nutrition_plans"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)  # <--- aquí
+    tipo = Column(String, nullable=False)
+    calorias = Column(Float, nullable=False)
+    macros = Column(JSON, nullable=False)
+    menu = Column(JSON, nullable=False)
+    created_at = Column(DateTime, server_default=func.now())
+
+    user = relationship("User", back_populates="plans")

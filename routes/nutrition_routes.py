@@ -73,7 +73,7 @@ async def generate_snacks(data: UserData):
     }
 
 
-# 🔹 Sustituciones de alimentos
+# 🔹 Sustituciones de alimentos ---- no va a funciona generate_menu- no esta preparado para no recibir calorias -> se hace cunado tengamos id de alimento y sabremos su kcals
 @router.get("/substitutions")
 async def generate_substitutions(alimento: str):
     # Sustituciones no requieren macros completos, pero podemos pasar valores neutros
