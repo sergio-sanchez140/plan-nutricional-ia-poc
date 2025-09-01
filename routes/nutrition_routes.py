@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from models.user_data import UserUpdate
 from services.nutrition import calcular_macros
 from services.groq_client import generate_menu_with_groq
+from core.config import settings
 from core.prompts import (
     MENU_DIARIO_PROMPT,
     MENU_SEMANAL_PROMPT,
@@ -17,6 +18,8 @@ router = APIRouter()
 @router.post("/plan-nutricional-daily")
 async def generate_plan_daily(data: UserUpdate):
     calories, macros = calcular_macros(data)
+    print("--------------")
+    print(settings.GROQ_API_KEY)
     menu_diario = generate_menu_with_groq(
         calories, macros, data.preferencias or [], data.restricciones or [], MENU_DIARIO_PROMPT
     )

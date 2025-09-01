@@ -65,6 +65,12 @@ Levantar el servidor en modo desarrollo:
 uvicorn main:app --reload
 ```
 
+Si las ejecuciones se mueres, hay que matar uvicorn
+```bash
+taskkill /F /IM python.exe
+uvicorn main:app --reload
+```
+
 Abrir en el navegador:
 
 API Docs (Swagger): http://127.0.0.1:8000/docs
