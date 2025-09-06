@@ -1,21 +1,36 @@
 from pydantic import BaseModel, EmailStr, Field, field_validator
 from .enums import ActivityLevel, Goal, Gender
 
-
 class UserCreate(BaseModel):
     nombre: str = Field(
         ..., 
         min_length=2, 
         max_length=50, 
-        pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$",
+        pattern=r"^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$",
         description="Nombre del usuario, solo letras y espacios."
     )
     email: EmailStr
+    password: str = Field(
+        ..., 
+        min_length=8, 
+        max_length=128, 
+        description="Contraseña del usuario (mínimo 8 caracteres)."
+    )
 
     @field_validator("nombre")
     def normalize_nombre(cls, v: str) -> str:
         return v.strip().title()  # elimina espacios extras y capitaliza
-
+    @field_validator("password")
+    def validar_password(cls, v: str) -> str:
+        if not any(c.isupper() for c in v):
+            raise ValueError("La contraseña debe contener al menos una mayúscula")
+        if not any(c.islower() for c in v):
+            raise ValueError("La contraseña debe contener al menos una minúscula")
+        if not any(c.isdigit() for c in v):
+            raise ValueError("La contraseña debe contener al menos un número")
+        if not any(c in "!@#$%^&*()-_=+[]{}|;:,.<>?/" for c in v):
+            raise ValueError("La contraseña debe contener al menos un símbolo")
+        return v
 
 class UserUpdate(BaseModel):
     edad: int | None = Field(

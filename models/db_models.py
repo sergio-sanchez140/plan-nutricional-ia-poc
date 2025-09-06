@@ -8,6 +8,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     nombre = Column(String, nullable=False)
     email = Column(String, unique=True, nullable=False)
+    hashed_password = Column(String, nullable=False)  # ✅ obligatorio para login seguro
     edad = Column(Integer, nullable=True)
     genero = Column(String, nullable=True)
     peso = Column(Float, nullable=True)

@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from passlib.context import CryptContext
 from db.database import get_db
 from models.db_models import User
 from models.user_data import UserCreate, UserUpdate
@@ -8,16 +9,27 @@ from models.plan_schemas import NutritionPlanCreate
 
 router = APIRouter()
 
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def hash_password(password: str) -> str:
+    return pwd_context.hash(password)
+
 # 🔹 Crear usuario
 @router.post("/users")
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
+    # Pydantic ya validó `nombre` y `password` antes de entrar aquí
     if db.query(User).filter(User.email == user.email).first():
         raise HTTPException(status_code=400, detail="El email ya está registrado")
-    db_user = User(nombre=user.nombre, email=user.email)
+
+    db_user = User(
+        nombre=user.nombre,
+        email=user.email,
+        hashed_password=hash_password(user.password)  # SQLAlchemy necesita este campo
+    )
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
-    return db_user
+    return {"id": db_user.id, "nombre": db_user.nombre, "email": db_user.email}
 
 # 🔹 Actualizar usuario
 @router.put("/users/{email}")
