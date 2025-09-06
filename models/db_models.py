@@ -8,7 +8,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     nombre = Column(String, nullable=False)
     email = Column(String, unique=True, nullable=False)
-    hashed_password = Column(String, nullable=False)  # ✅ obligatorio para login seguro
+    hashed_password = Column(String, nullable=False)
     edad = Column(Integer, nullable=True)
     genero = Column(String, nullable=True)
     peso = Column(Float, nullable=True)
@@ -26,7 +26,7 @@ class NutritionPlan(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    tipo = Column(String, nullable=False)
+    tipo = Column(String, nullable=False)  # diario, semanal, mensual
     calorias = Column(Float, nullable=False)
     macros = Column(JSON, nullable=False)
     menu = Column(JSON, nullable=False)

@@ -12,7 +12,7 @@ def calcular_macros(data):
         "activo": 1.725,
         "muy_activo": 1.9
     }
-    tdee = bmr * activity_factors.get(data.nivel_actividad.value, 1.2)
+    tdee = bmr * activity_factors.get(data.nivel_actividad, 1.2)
 
     if data.objetivo == Goal.lose:
         calories = tdee - 500

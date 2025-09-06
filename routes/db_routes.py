@@ -93,5 +93,11 @@ def read_me(current_user: User = Depends(get_current_user)):
         "nombre": current_user.nombre,
         "email": current_user.email,
         "edad": current_user.edad,
-        "peso": current_user.peso
+        "genero": current_user.genero,
+        "peso": current_user.peso,
+        "altura": current_user.altura,
+        "nivel_actividad": current_user.nivel_actividad,
+        "objetivo": current_user.objetivo,
+        "preferencias": current_user.preferencias,
+        "restricciones": current_user.restricciones
     }

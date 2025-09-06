@@ -147,7 +147,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"edad\": 29,\r\n    \"peso\": 75.5,\r\n    \"altura\": 180,\r\n    \"genero\": \"hombre\",\r\n    \"nivel_actividad\": \"moderado\",\r\n    \"objetivo\": \"mantener\",\r\n    \"preferencias\": [\"pollo\", \"arroz\"],\r\n    \"restricciones\": [\"gluten\"]\r\n}",
+					"raw": "{\r\n    \"edad\": 29,\r\n    \"peso\": 85.9,\r\n    \"altura\": 190,\r\n    \"genero\": \"hombre\",\r\n    \"nivel_actividad\": \"activo\",\r\n    \"objetivo\": \"perder\",\r\n    \"preferencias\": [\"pollo\", \"arroz\"],\r\n    \"restricciones\": [\"\"]\r\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -199,44 +199,6 @@
 			"response": []
 		},
 		{
-			"name": "Save Plan",
-			"request": {
-				"method": "POST",
-				"header": [
-					{
-						"key": "Content-Type",
-						"value": "application/json"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\r\n  \"user_id\": 1,\r\n  \"tipo\": \"daily\",\r\n  \"calorias\": 2200,\r\n  \"macros\": {\r\n    \"carbohidratos_g\": 250,\r\n    \"proteinas_g\": 150,\r\n    \"grasas_g\": 70\r\n  },\r\n  \"menu\": {\r\n    \"desayuno\": {\r\n      \"avena\": \"100 gr\",\r\n      \"leche\": \"200 ml\",\r\n      \"banana\": \"1 unidad\"\r\n    },\r\n    \"comida\": {\r\n      \"pechuga\": \"200 gr\",\r\n      \"arroz\": \"150 gr\",\r\n      \"ensalada\": \"100 gr\"\r\n    },\r\n    \"cena\": {\r\n      \"pescado\": \"150 gr\",\r\n      \"verduras\": \"200 gr\"\r\n    }\r\n  }\r\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "http://127.0.0.1:8000/db/plans",
-					"protocol": "http",
-					"host": [
-						"127",
-						"0",
-						"0",
-						"1"
-					],
-					"port": "8000",
-					"path": [
-						"db",
-						"plans"
-					]
-				},
-				"description": "Generated from cURL: curl -X POST \"http://127.0.0.1:8000/db/plans\" \\\r\n  -H \"Content-Type: application/json\" \\\r\n  -d '{\r\n        \"user_id\": 1,\r\n        \"tipo\": \"daily\",\r\n        \"calorias\": 2500,\r\n        \"macros\": {\"carbohidratos_g\": 300, \"proteinas_g\": 150, \"grasas_g\": 80},\r\n        \"menu\": {\"desayuno\": \"200 gr de avena\", \"comida\": \"200 gr de pollo\", \"cena\": \"150 gr de arroz\"}\r\n      }'\r\n"
-			},
-			"response": []
-		},
-		{
 			"name": "Get Plan By Id",
 			"request": {
 				"method": "GET",
@@ -262,45 +224,7 @@
 			"response": []
 		},
 		{
-			"name": "Create Plan Daily",
-			"request": {
-				"method": "POST",
-				"header": [
-					{
-						"key": "Content-Type",
-						"value": "application/json"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\r\n        \"edad\": 29,\r\n        \"peso\": 70,\r\n        \"altura\": 175,\r\n        \"genero\": \"hombre\",\r\n        \"nivel_actividad\": \"moderado\",\r\n        \"objetivo\": \"mantener\",\r\n        \"preferencias\": [\"pollo\", \"arroz\"],\r\n        \"restricciones\": [\"gluten\"]\r\n      }",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "http://127.0.0.1:8000/nutrition/plan-nutricional-daily",
-					"protocol": "http",
-					"host": [
-						"127",
-						"0",
-						"0",
-						"1"
-					],
-					"port": "8000",
-					"path": [
-						"nutrition",
-						"plan-nutricional-daily"
-					]
-				},
-				"description": "Generated from cURL: curl -X POST \"http://127.0.0.1:8000/plan-nutricional-daily\" \\\r\n  -H \"Content-Type: application/json\" \\\r\n  -d '{\r\n        \"edad\": 29,\r\n        \"peso\": 70,\r\n        \"altura\": 175,\r\n        \"genero\": \"hombre\",\r\n        \"nivel_actividad\": \"moderado\",\r\n        \"objetivo\": \"mantener\",\r\n        \"preferencias\": [\"pollo\", \"arroz\"],\r\n        \"restricciones\": [\"gluten\"]\r\n      }'\r\n"
-			},
-			"response": []
-		},
-		{
-			"name": "Create Plan Weekly",
+			"name": "Generate Plan Weekly",
 			"request": {
 				"method": "POST",
 				"header": [
@@ -338,7 +262,7 @@
 			"response": []
 		},
 		{
-			"name": "Create Plan Monthly",
+			"name": "Generate Plan Monthly",
 			"request": {
 				"method": "POST",
 				"header": [
@@ -376,7 +300,7 @@
 			"response": []
 		},
 		{
-			"name": "Create Snacks Dailys",
+			"name": "Generate Snacks Dailys",
 			"request": {
 				"method": "POST",
 				"header": [
@@ -440,6 +364,84 @@
 					]
 				},
 				"description": "Generated from cURL: curl -X GET \"http://127.0.0.1:8000/substitutions?alimento=pollo\"\r\n"
+			},
+			"response": []
+		},
+		{
+			"name": "Generate&Save Menu",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{access_token}}"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"tipo\": \"diario\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://127.0.0.1:8000/ai/menus/generate",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"ai",
+						"menus",
+						"generate"
+					]
+				},
+				"description": "Generated from cURL: curl --location --request POST 'http://127.0.0.1:8000/ai/menus' \\\r\n--header 'Authorization: Bearer {{access_token}}' \\\r\n--header 'Content-Type: application/json' \\\r\n--data-raw '{\r\n    \"tipo\": \"diario\",\r\n    \"calorias\": 2200,\r\n    \"macros\": {\"proteinas\": 120, \"grasas\": 70, \"carbs\": 250},\r\n    \"menu\": [\r\n        {\"desayuno\": \"Huevos revueltos con aguacate\"},\r\n        {\"almuerzo\": \"Pollo a la plancha con ensalada\"},\r\n        {\"cena\": \"Salmón con verduras\"}\r\n    ]\r\n}'\r\n"
+			},
+			"response": []
+		},
+		{
+			"name": "Get Menu",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{access_token}}"
+					}
+				],
+				"url": {
+					"raw": "http://127.0.0.1:8000/ai/menus?tipo=diario",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"ai",
+						"menus"
+					],
+					"query": [
+						{
+							"key": "tipo",
+							"value": "diario"
+						}
+					]
+				},
+				"description": "Generated from cURL: curl --location --request GET 'http://127.0.0.1:8000/ai/menus?tipo=diario' \\\r\n--header 'Authorization: Bearer {{access_token}}'\r\n"
 			},
 			"response": []
 		}
