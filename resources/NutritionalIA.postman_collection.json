@@ -18,7 +18,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"nombre\": \"Sergio\",\r\n    \"email\": \"sergio@example.com\"\r\n}",
+					"raw": "{\r\n    \"nombre\": \"Sergio\",\r\n    \"email\": \"sergio@example.com\",\r\n    \"password\": \"passworD1$\"\r\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -41,6 +41,97 @@
 					]
 				},
 				"description": "Generated from cURL: curl -X POST \"http://127.0.0.1:8000/db/users\" \\\r\n  -H \"Content-Type: application/json\" \\\r\n  -d '{\"nombre\": \"Sergio\", \"edad\": 29, \"genero\": \"hombre\"}'\r\n"
+			},
+			"response": []
+		},
+		{
+			"name": "Login",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"if (pm.response.code === 200) {\r",
+							"    var jsonData = pm.response.json();\r",
+							"    if (jsonData.access_token) {\r",
+							"        // Guardamos el token con \"Bearer \" delante\r",
+							"        pm.environment.set(\"access_token\", \"Bearer \" + jsonData.access_token);\r",
+							"        console.log(\"Token guardado correctamente.\");\r",
+							"    } else {\r",
+							"        console.warn(\"No se encontró access_token en la respuesta.\");\r",
+							"    }\r",
+							"} else {\r",
+							"    console.warn(\"Login fallido. Código:\", pm.response.code);\r",
+							"}"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"email\": \"sergio@example.com\",\r\n    \"password\": \"passworD1$\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://127.0.0.1:8000/db/login",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"db",
+						"login"
+					]
+				},
+				"description": "Generated from cURL: curl -X POST \"http://127.0.0.1:8000/db/users\" \\\r\n  -H \"Content-Type: application/json\" \\\r\n  -d '{\"nombre\": \"Sergio\", \"edad\": 29, \"genero\": \"hombre\"}'\r\n"
+			},
+			"response": []
+		},
+		{
+			"name": "Get me Token",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{access_token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "http://127.0.0.1:8000/db/me",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"db",
+						"me"
+					]
+				},
+				"description": "Generated from cURL: curl -X GET \"http://127.0.0.1:8000/db/users\"\r\n"
 			},
 			"response": []
 		},

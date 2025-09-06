@@ -3,9 +3,10 @@ from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from db.database import get_db
 from models.db_models import User
-from models.user_data import UserCreate, UserUpdate
+from models.user_data import UserCreate, UserUpdate, UserLogin
 from models.db_models import NutritionPlan, User
 from models.plan_schemas import NutritionPlanCreate
+from utils.auth_utils import create_access_token, get_current_user, verify_password
 
 router = APIRouter()
 
@@ -75,3 +76,22 @@ def save_plan(plan: NutritionPlanCreate, db: Session = Depends(get_db)):
 @router.get("/plans/{user_id}")
 def get_user_plans(user_id: int, db: Session = Depends(get_db)):
     return db.query(NutritionPlan).filter(NutritionPlan.user_id == user_id).all()
+
+@router.post("/login")
+def login(user: UserLogin, db: Session = Depends(get_db)):
+    db_user = db.query(User).filter(User.email == user.email).first()
+    if not db_user or not verify_password(user.password, db_user.hashed_password):
+        raise HTTPException(status_code=400, detail="Email o contraseña incorrectos")
+    
+    # Generar token JWT
+    access_token = create_access_token(data={"sub": db_user.email})
+    return {"access_token": access_token, "token_type": "bearer"}
+
+@router.get("/me")
+def read_me(current_user: User = Depends(get_current_user)):
+    return {
+        "nombre": current_user.nombre,
+        "email": current_user.email,
+        "edad": current_user.edad,
+        "peso": current_user.peso
+    }

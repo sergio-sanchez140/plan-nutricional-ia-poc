@@ -64,3 +64,8 @@ class UserUpdate(BaseModel):
         if v is None:
             return []
         return list({item.strip().lower() for item in v if item.strip()})
+
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str = Field(..., min_length=8, max_length=128)
