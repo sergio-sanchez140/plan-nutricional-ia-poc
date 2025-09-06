@@ -338,36 +338,6 @@
 			"response": []
 		},
 		{
-			"name": "Get Substitutions",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "http://127.0.0.1:8000/nutrition/substitutions?alimento=pollo",
-					"protocol": "http",
-					"host": [
-						"127",
-						"0",
-						"0",
-						"1"
-					],
-					"port": "8000",
-					"path": [
-						"nutrition",
-						"substitutions"
-					],
-					"query": [
-						{
-							"key": "alimento",
-							"value": "pollo"
-						}
-					]
-				},
-				"description": "Generated from cURL: curl -X GET \"http://127.0.0.1:8000/substitutions?alimento=pollo\"\r\n"
-			},
-			"response": []
-		},
-		{
 			"name": "Generate&Save Menu",
 			"request": {
 				"method": "POST",
@@ -442,6 +412,50 @@
 					]
 				},
 				"description": "Generated from cURL: curl --location --request GET 'http://127.0.0.1:8000/ai/menus?tipo=diario' \\\r\n--header 'Authorization: Bearer {{access_token}}'\r\n"
+			},
+			"response": []
+		},
+		{
+			"name": "Generate&Save Subtitution",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Authorization",
+						"value": "{{access_token}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"nombre\": \"Huevo revuelto\",\r\n  \"calorias\": 200,\r\n  \"macros\": {\r\n    \"carbohidratos_g\": 1,\r\n    \"proteinas_g\": 18,\r\n    \"grasas_g\": 10\r\n  }\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://127.0.0.1:8000/ai/menus/2/replace-meal",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"ai",
+						"menus",
+						"2",
+						"replace-meal"
+					]
+				},
+				"description": "Generated from cURL: curl -X POST \"http://127.0.0.1:8000/ai/menus/1/replace-meal\" \\\r\n-H \"Content-Type: application/json\" \\\r\n-H \"Authorization: Bearer TU_TOKEN_AQUI\" \\\r\n-d '{\r\n  \"nombre\": \"almuerzo\",\r\n  \"calorias\": 600,\r\n  \"macros\": {\r\n    \"carbohidratos_g\": 75,\r\n    \"proteinas_g\": 40,\r\n    \"grasas_g\": 20\r\n  }\r\n}'\r\n"
 			},
 			"response": []
 		}
