@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
-from models.db_models import NutritionPlan, User
-from models.plan_schemas import MenuTipoRequest, NutritionPlanCreate, NutritionPlanRead, ReplaceMealRequest
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Dict
+
+from models.db_models import NutritionPlan, User, Meal
+from models.plan_schemas import MenuTipoRequest, NutritionPlanRead, MealRead
 from db.database import get_db
 from utils.auth_utils import get_current_user
 from services.nutrition import calcular_macros
@@ -12,16 +13,15 @@ from utils.validation_utils import validar_datos_usuario
 
 router = APIRouter()
 
+
 @router.post("/menus/generate", response_model=NutritionPlanRead)
 def generar_menu_ia(
     menu_request: MenuTipoRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # Validación obligatoria
     validar_datos_usuario(current_user)
-    
-    # 🔹 Usamos los datos del usuario desde el token
+
     user_data = {
         "edad": current_user.edad,
         "peso": current_user.peso,
@@ -32,10 +32,7 @@ def generar_menu_ia(
         "restricciones": current_user.restricciones or []
     }
 
-    # 🔹 Calculamos calorías y macros
     calories, macros = calcular_macros(current_user)
-
-    # 🔹 Selección del prompt según tipo
     prompt_map = {
         "diario": MENU_DIARIO_PROMPT,
         "semanal": MENU_SEMANAL_PROMPT,
@@ -43,32 +40,53 @@ def generar_menu_ia(
     }
     prompt = prompt_map[menu_request.tipo]
 
-    # 🔹 Generamos el menú con IA
-    menu = generate_menu_with_groq(
+    comidas_generadas = generate_menu_with_groq(
         calories, macros,
         user_data["preferencias"],
         user_data["restricciones"],
         prompt
     )
 
-    # 🔹 Guardamos el plan en la base de datos
     new_plan = NutritionPlan(
         user_id=current_user.id,
         tipo=menu_request.tipo,
         calorias=calories,
-        macros=macros,
-        menu=menu
+        macros=macros
     )
     db.add(new_plan)
     db.commit()
     db.refresh(new_plan)
 
+    # Guardar comidas y construir mapping turno -> meal_ids
+    menu_mapping: Dict[str, List[int]] = {}
+    for comida in comidas_generadas:
+        turno = comida.get("turno", "comida")
+        meal = Meal(
+            plan_id=new_plan.id,
+            nombre=comida["nombre"],
+            alimentos=comida.get("ingredientes", []),
+            macros=comida.get("macros", {"carbohidratos_g":0,"proteinas_g":0,"grasas_g":0}),
+            calorias=comida.get("calorias", 0),
+            completed=False
+        )
+        db.add(meal)
+        db.commit()
+        db.refresh(meal)
+
+        if turno not in menu_mapping:
+            menu_mapping[turno] = []
+        menu_mapping[turno].append(meal.id)
+
+    # Guardar mapping en plan
+    new_plan.menu = menu_mapping
+    db.commit()
+    db.refresh(new_plan)
     return new_plan
 
-# 🔹 Obtener menús del usuario
+
 @router.get("/menus", response_model=List[NutritionPlanRead])
 def obtener_menus(
-    tipo: str = None,  # diario/semanal/mensual
+    tipo: str = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -77,54 +95,61 @@ def obtener_menus(
         query = query.filter(NutritionPlan.tipo == tipo)
     return query.order_by(NutritionPlan.created_at.desc()).all()
 
+
 @router.post("/menus/{plan_id}/replace-meal")
 def sustituir_comida(
     plan_id: int,
-    meal_info: dict,  # {nombre: "Huevo revuelto", calorias, macros {...}}
+    meal_info: dict,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # 🔹 Buscar el plan
     plan = db.query(NutritionPlan).filter(
         NutritionPlan.id == plan_id,
         NutritionPlan.user_id == current_user.id
     ).first()
-
     if not plan:
         raise HTTPException(status_code=404, detail="Plan no encontrado")
 
-    # 🔹 Generar comida alternativa con IA
     nueva_comida = generate_meal_with_groq(
         meal_info,
         current_user.preferencias or [],
         current_user.restricciones or []
     )
 
-    # 🔹 Reemplazar la comida concreta
-    menu = plan.menu
-    replaced = False
-    turno_reemplazado = None
-    for turno, comidas in menu.items():  # 'desayuno', 'comida', 'cena'
-        for idx, comida in enumerate(comidas):
-            if comida["nombre"] == meal_info["nombre"]:
-                comidas[idx] = nueva_comida
-                replaced = True
-                turno_reemplazado = turno
-                break
-        if replaced:
-            break
+    meal = db.query(Meal).filter(
+        Meal.plan_id == plan.id,
+        Meal.nombre == meal_info["nombre"]
+    ).first()
+    if not meal:
+        raise HTTPException(status_code=404, detail="Comida no encontrada")
 
-    if not replaced:
-        raise HTTPException(status_code=400, detail="Comida no encontrada en el menú")
-
-    # 🔹 Guardar cambios
-    plan.menu = menu
+    meal.nombre = nueva_comida["nombre"]
+    meal.macros = nueva_comida["macros"]
+    meal.calorias = nueva_comida["calorias"]
     db.commit()
-    db.refresh(plan)
+    db.refresh(meal)
 
-    # 🔹 Solo devolver la comida modificada y su turno
     return {
         "mensaje": "Comida sustituida correctamente",
-        "turno": turno_reemplazado,
-        "nueva_comida": nueva_comida
+        "nueva_comida": meal
     }
+
+
+@router.patch("/meals/{meal_id}/toggle", response_model=MealRead)
+def toggle_meal_completed(
+    meal_id: int,
+    completed: bool,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    meal = db.query(Meal).join(NutritionPlan).filter(
+        Meal.id == meal_id,
+        NutritionPlan.user_id == current_user.id
+    ).first()
+    if not meal:
+        raise HTTPException(status_code=404, detail="Comida no encontrada")
+
+    meal.completed = completed
+    db.commit()
+    db.refresh(meal)
+    return meal
