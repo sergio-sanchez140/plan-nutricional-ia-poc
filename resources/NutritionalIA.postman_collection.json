@@ -7,6 +7,30 @@
 	},
 	"item": [
 		{
+			"name": "Get All Users",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:8000/db/users",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"db",
+						"users"
+					]
+				},
+				"description": "Generated from cURL: curl -X GET \"http://127.0.0.1:8000/db/users\"\r\n"
+			},
+			"response": []
+		},
+		{
 			"name": "Register User",
 			"request": {
 				"method": "POST",
@@ -175,169 +199,6 @@
 			"response": []
 		},
 		{
-			"name": "Get All Users",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "http://127.0.0.1:8000/db/users",
-					"protocol": "http",
-					"host": [
-						"127",
-						"0",
-						"0",
-						"1"
-					],
-					"port": "8000",
-					"path": [
-						"db",
-						"users"
-					]
-				},
-				"description": "Generated from cURL: curl -X GET \"http://127.0.0.1:8000/db/users\"\r\n"
-			},
-			"response": []
-		},
-		{
-			"name": "Get Plan By Id",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "http://127.0.0.1:8000/db/plans/1",
-					"protocol": "http",
-					"host": [
-						"127",
-						"0",
-						"0",
-						"1"
-					],
-					"port": "8000",
-					"path": [
-						"db",
-						"plans",
-						"1"
-					]
-				},
-				"description": "Generated from cURL: curl -X GET \"http://127.0.0.1:8000/db/plans/1\"\r\n"
-			},
-			"response": []
-		},
-		{
-			"name": "Generate Plan Weekly",
-			"request": {
-				"method": "POST",
-				"header": [
-					{
-						"key": "Content-Type",
-						"value": "application/json"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\r\n        \"edad\": 29,\r\n        \"peso\": 70,\r\n        \"altura\": 175,\r\n        \"genero\": \"hombre\",\r\n        \"nivel_actividad\": \"moderado\",\r\n        \"objetivo\": \"mantener\",\r\n        \"preferencias\": [\"pollo\", \"arroz\"],\r\n        \"restricciones\": [\"gluten\"]\r\n      }",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "http://127.0.0.1:8000/nutrition/plan-nutricional-weekly",
-					"protocol": "http",
-					"host": [
-						"127",
-						"0",
-						"0",
-						"1"
-					],
-					"port": "8000",
-					"path": [
-						"nutrition",
-						"plan-nutricional-weekly"
-					]
-				},
-				"description": "Generated from cURL: curl -X POST \"http://127.0.0.1:8000/plan-nutricional-weekly\" \\\r\n  -H \"Content-Type: application/json\" \\\r\n  -d '{\r\n        \"edad\": 29,\r\n        \"peso\": 70,\r\n        \"altura\": 175,\r\n        \"genero\": \"hombre\",\r\n        \"nivel_actividad\": \"moderado\",\r\n        \"objetivo\": \"mantener\",\r\n        \"preferencias\": [\"pollo\", \"arroz\"],\r\n        \"restricciones\": [\"gluten\"]\r\n      }'\r\n"
-			},
-			"response": []
-		},
-		{
-			"name": "Generate Plan Monthly",
-			"request": {
-				"method": "POST",
-				"header": [
-					{
-						"key": "Content-Type",
-						"value": "application/json"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\r\n        \"edad\": 29,\r\n        \"peso\": 70,\r\n        \"altura\": 175,\r\n        \"genero\": \"hombre\",\r\n        \"nivel_actividad\": \"moderado\",\r\n        \"objetivo\": \"mantener\",\r\n        \"preferencias\": [\"pollo\", \"arroz\"],\r\n        \"restricciones\": [\"gluten\"]\r\n      }",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "http://127.0.0.1:8000/nutrition/plan-nutricional-monthly",
-					"protocol": "http",
-					"host": [
-						"127",
-						"0",
-						"0",
-						"1"
-					],
-					"port": "8000",
-					"path": [
-						"nutrition",
-						"plan-nutricional-monthly"
-					]
-				},
-				"description": "Generated from cURL: curl -X POST \"http://127.0.0.1:8000/plan-nutricional-monthly\" \\\r\n  -H \"Content-Type: application/json\" \\\r\n  -d '{\r\n        \"edad\": 29,\r\n        \"peso\": 70,\r\n        \"altura\": 175,\r\n        \"genero\": \"hombre\",\r\n        \"nivel_actividad\": \"moderado\",\r\n        \"objetivo\": \"mantener\",\r\n        \"preferencias\": [\"pollo\", \"arroz\"],\r\n        \"restricciones\": [\"gluten\"]\r\n      }'\r\n"
-			},
-			"response": []
-		},
-		{
-			"name": "Generate Snacks Dailys",
-			"request": {
-				"method": "POST",
-				"header": [
-					{
-						"key": "Content-Type",
-						"value": "application/json"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\r\n        \"edad\": 29,\r\n        \"peso\": 70,\r\n        \"altura\": 175,\r\n        \"genero\": \"hombre\",\r\n        \"nivel_actividad\": \"moderado\",\r\n        \"objetivo\": \"mantener\",\r\n        \"preferencias\": [\"almendras\", \"manzana\"],\r\n        \"restricciones\": []\r\n      }",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "http://127.0.0.1:8000/nutrition/snacks-dailys",
-					"protocol": "http",
-					"host": [
-						"127",
-						"0",
-						"0",
-						"1"
-					],
-					"port": "8000",
-					"path": [
-						"nutrition",
-						"snacks-dailys"
-					]
-				},
-				"description": "Generated from cURL: curl -X POST \"http://127.0.0.1:8000/snacks-dailys\" \\\r\n  -H \"Content-Type: application/json\" \\\r\n  -d '{\r\n        \"edad\": 29,\r\n        \"peso\": 70,\r\n        \"altura\": 175,\r\n        \"genero\": \"hombre\",\r\n        \"nivel_actividad\": \"moderado\",\r\n        \"objetivo\": \"mantener\",\r\n        \"preferencias\": [\"almendras\", \"manzana\"],\r\n        \"restricciones\": []\r\n      }'\r\n"
-			},
-			"response": []
-		},
-		{
 			"name": "Generate&Save Menu",
 			"request": {
 				"method": "POST",
@@ -456,6 +317,47 @@
 					]
 				},
 				"description": "Generated from cURL: curl -X POST \"http://127.0.0.1:8000/ai/menus/1/replace-meal\" \\\r\n-H \"Content-Type: application/json\" \\\r\n-H \"Authorization: Bearer TU_TOKEN_AQUI\" \\\r\n-d '{\r\n  \"nombre\": \"almuerzo\",\r\n  \"calorias\": 600,\r\n  \"macros\": {\r\n    \"carbohidratos_g\": 75,\r\n    \"proteinas_g\": 40,\r\n    \"grasas_g\": 20\r\n  }\r\n}'\r\n"
+			},
+			"response": []
+		},
+		{
+			"name": "Complete Meal",
+			"request": {
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{access_token}}"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "http://127.0.0.1:8000/ai/meals/1/toggle?completed=true",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"ai",
+						"meals",
+						"1",
+						"toggle"
+					],
+					"query": [
+						{
+							"key": "completed",
+							"value": "true"
+						}
+					]
+				},
+				"description": "Generated from cURL: curl -X PATCH \"http://localhost:8000/meals/123/toggle?completed=true\" \\\r\n  -H \"Authorization: Bearer YOUR_TOKEN\" \\\r\n  -H \"Content-Type: application/json\"\r\n"
 			},
 			"response": []
 		}
