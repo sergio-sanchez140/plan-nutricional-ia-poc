@@ -6,7 +6,7 @@ from models.db_models import NutritionPlan, User, Meal
 from models.plan_schemas import MenuTipoRequest, NutritionPlanRead, MealRead
 from db.database import get_db
 from utils.auth_utils import get_current_user
-from services.nutrition import calcular_macros, get_user_plan_by_type, serialize_meal
+from services.nutrition import calcular_macros, get_meal_by_plan_and_id, get_user_plan_by_type, serialize_meal
 from services.groq_client import generate_meal_with_groq, generate_menu_with_groq
 from core.prompts import MENU_DIARIO_PROMPT, MENU_SEMANAL_PROMPT, MENU_MENSUAL_PROMPT
 from utils.validation_utils import validar_datos_usuario
@@ -104,14 +104,14 @@ def obtener_menus(
     query = db.query(NutritionPlan).filter(NutritionPlan.user_id == current_user.id)
     return query.order_by(NutritionPlan.created_at.desc()).all()
 
-
-@router.post("/menus/{plan_id}/replace-meal")
+@router.post("/menus/{plan_id}/replace-meal/{meal_id}")
 def sustituir_comida(
     plan_id: int,
-    meal_info: dict,
+    meal_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    # 🔹 Recuperar plan
     plan = db.query(NutritionPlan).filter(
         NutritionPlan.id == plan_id,
         NutritionPlan.user_id == current_user.id
@@ -119,30 +119,31 @@ def sustituir_comida(
     if not plan:
         raise HTTPException(status_code=404, detail="Plan no encontrado")
 
+    # 🔹 Recuperar comida
+    meal = get_meal_by_plan_and_id(db, plan_id, meal_id)
+
+    # 🔹 Generar nueva comida con la IA
     nueva_comida = generate_meal_with_groq(
-        meal_info,
+        {
+            "nombre": meal.nombre,
+            "ingredientes": meal.alimentos,
+            "macros": meal.macros,
+            "calorias": meal.calorias
+        },
         current_user.preferencias or [],
         current_user.restricciones or []
     )
 
-    meal = db.query(Meal).filter(
-        Meal.plan_id == plan.id,
-        Meal.nombre == meal_info["nombre"]
-    ).first()
-    if not meal:
-        raise HTTPException(status_code=404, detail="Comida no encontrada")
-
+    # 🔹 Actualizar la comida en la base de datos
     meal.nombre = nueva_comida["nombre"]
+    meal.alimentos = nueva_comida.get("ingredientes", [])
     meal.macros = nueva_comida["macros"]
     meal.calorias = nueva_comida["calorias"]
     db.commit()
     db.refresh(meal)
 
-    return {
-        "mensaje": "Comida sustituida correctamente",
-        "nueva_comida": meal
-    }
-
+    # 🔹 Retornar solo la comida en el formato requerido
+    return serialize_meal(meal)
 
 @router.patch("/meals/{meal_id}/toggle", response_model=MealRead)
 def toggle_meal_completed(

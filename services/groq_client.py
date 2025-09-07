@@ -1,4 +1,5 @@
 # services/groq_client.py
+import re
 import requests
 import json
 from core.config import settings
@@ -95,7 +96,6 @@ No agregues texto fuera del JSON. Cada comida debe tener todos los campos.
     print(f"[DEBUG] Menu final generado: {menu_list}")
     return menu_list
 
-
 def generate_meal_with_groq(meal_info, preferencias, restricciones):
     """
     Genera una comida alternativa con macros similares usando la IA de Groq.
@@ -143,22 +143,34 @@ Comida original:
     content = response.json()["choices"][0]["message"]["content"]
     print(f"[DEBUG] Contenido crudo de la IA para comida alternativa: {content}")
 
+    # 🔹 Intentar cargar JSON directamente
     try:
         meal_dict = json.loads(content)
     except json.JSONDecodeError:
-        start = content.find("{")
-        end = content.rfind("}") + 1
-        if start == -1 or end == -1:
+        # 🔹 Extraer primer bloque JSON válido usando regex
+        match = re.search(r'\{.*\}', content, re.DOTALL)
+        if not match:
+            print("[WARN] No se encontró JSON válido, se devuelve fallback.")
             return {
                 "nombre": meal_info.get("nombre", "Comida alternativa"),
-                "ingredientes": [],
+                "ingredientes": meal_info.get("ingredientes", []),
                 "macros": meal_info.get("macros", {"carbohidratos_g":0,"proteinas_g":0,"grasas_g":0}),
                 "calorias": meal_info.get("calorias", 0),
                 "completed": False
             }
-        meal_dict = json.loads(content[start:end])
+        try:
+            meal_dict = json.loads(match.group())
+        except json.JSONDecodeError:
+            print("[WARN] JSON inválido tras regex, se devuelve fallback.")
+            return {
+                "nombre": meal_info.get("nombre", "Comida alternativa"),
+                "ingredientes": meal_info.get("ingredientes", []),
+                "macros": meal_info.get("macros", {"carbohidratos_g":0,"proteinas_g":0,"grasas_g":0}),
+                "calorias": meal_info.get("calorias", 0),
+                "completed": False
+            }
 
-    # Validación mínima
+    # 🔹 Validación mínima
     for key in ["nombre", "ingredientes", "macros", "calorias"]:
         if key not in meal_dict:
             meal_dict[key] = meal_info.get(key, [] if key == "ingredientes" else 0)

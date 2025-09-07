@@ -1,3 +1,4 @@
+from http.client import HTTPException
 from sqlalchemy.orm import Session
 from models.enums import Gender, Goal
 from models.db_models import Meal, NutritionPlan, User
@@ -76,3 +77,12 @@ def calcular_macros(user: User):
     }
 
     return round(calories), macros
+
+def get_meal_by_plan_and_id(db: Session, plan_id: int, meal_id: int) -> Meal:
+    meal = db.query(Meal).filter(
+        Meal.id == meal_id,
+        Meal.plan_id == plan_id
+    ).first()
+    if not meal:
+        raise HTTPException(status_code=404, detail="Comida no encontrada")
+    return meal
