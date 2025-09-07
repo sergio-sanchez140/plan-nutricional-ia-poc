@@ -277,6 +277,47 @@
 			"response": []
 		},
 		{
+			"name": "Complete Meal",
+			"request": {
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{access_token}}"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "http://127.0.0.1:8000/ai/meals/1/toggle?completed=true",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"ai",
+						"meals",
+						"1",
+						"toggle"
+					],
+					"query": [
+						{
+							"key": "completed",
+							"value": "true"
+						}
+					]
+				},
+				"description": "Generated from cURL: curl -X PATCH \"http://localhost:8000/meals/123/toggle?completed=true\" \\\r\n  -H \"Authorization: Bearer YOUR_TOKEN\" \\\r\n  -H \"Content-Type: application/json\"\r\n"
+			},
+			"response": []
+		},
+		{
 			"name": "Generate&Save Subtitution",
 			"request": {
 				"method": "POST",
@@ -317,47 +358,6 @@
 					]
 				},
 				"description": "Generated from cURL: curl -X POST \"http://127.0.0.1:8000/ai/menus/1/replace-meal\" \\\r\n-H \"Content-Type: application/json\" \\\r\n-H \"Authorization: Bearer TU_TOKEN_AQUI\" \\\r\n-d '{\r\n  \"nombre\": \"almuerzo\",\r\n  \"calorias\": 600,\r\n  \"macros\": {\r\n    \"carbohidratos_g\": 75,\r\n    \"proteinas_g\": 40,\r\n    \"grasas_g\": 20\r\n  }\r\n}'\r\n"
-			},
-			"response": []
-		},
-		{
-			"name": "Complete Meal",
-			"request": {
-				"method": "PATCH",
-				"header": [
-					{
-						"key": "Authorization",
-						"value": "{{access_token}}"
-					},
-					{
-						"key": "Content-Type",
-						"value": "application/json"
-					}
-				],
-				"url": {
-					"raw": "http://127.0.0.1:8000/ai/meals/1/toggle?completed=true",
-					"protocol": "http",
-					"host": [
-						"127",
-						"0",
-						"0",
-						"1"
-					],
-					"port": "8000",
-					"path": [
-						"ai",
-						"meals",
-						"1",
-						"toggle"
-					],
-					"query": [
-						{
-							"key": "completed",
-							"value": "true"
-						}
-					]
-				},
-				"description": "Generated from cURL: curl -X PATCH \"http://localhost:8000/meals/123/toggle?completed=true\" \\\r\n  -H \"Authorization: Bearer YOUR_TOKEN\" \\\r\n  -H \"Content-Type: application/json\"\r\n"
 			},
 			"response": []
 		}
