@@ -12,9 +12,11 @@ def generate_menu_with_groq(calories, macros, preferencias, restricciones, promp
       - macros
       - calorías
     """
+
     preferencias_text = ', '.join(preferencias) if preferencias else 'ninguna'
     restricciones_text = ', '.join(restricciones) if restricciones else 'ninguna'
 
+    # 🔹 Prompt reforzado con ejemplo
     prompt = prompt_template.format(
         calories=round(calories),
         carbs=round(macros.get('carbohidratos_g', 0)),
@@ -22,7 +24,24 @@ def generate_menu_with_groq(calories, macros, preferencias, restricciones, promp
         fats=round(macros.get('grasas_g', 0)),
         preferencias=preferencias_text,
         restricciones=restricciones_text
-    )
+    ) + """
+Devuelve SOLO un JSON válido con la siguiente estructura para cada comida:
+
+{
+  "desayuno": [
+    {
+      "nombre": "string",
+      "ingredientes": [{"nombre": "string", "cantidad_g": int}],
+      "macros": {"carbohidratos_g": int, "proteinas_g": int, "grasas_g": int},
+      "calorias": int
+    }
+  ],
+  "comida": [...],
+  "cena": [...]
+}
+
+No agregues texto fuera del JSON. Cada comida debe tener todos los campos.
+"""
 
     headers = {
         "Authorization": f"Bearer {settings.GROQ_API_KEY}",
@@ -36,19 +55,20 @@ def generate_menu_with_groq(calories, macros, preferencias, restricciones, promp
             {"role": "user", "content": prompt}
         ],
         "temperature": 0.7,
-        "max_tokens": 1000
+        "max_tokens": 1500
     }
 
     response = requests.post(settings.GROQ_API_URL, headers=headers, json=payload)
     response.raise_for_status()
 
     content = response.json()["choices"][0]["message"]["content"]
+    print(f"[DEBUG] Contenido crudo recibido de la IA: {content}")
 
     # 🔹 Intentamos cargar JSON directamente
     try:
         menu_dict = json.loads(content)
     except json.JSONDecodeError:
-        # 🔹 Fallback: buscamos la primera llave que tenga sentido
+        # Buscar primer bloque JSON válido
         start = content.find("{")
         end = content.rfind("}") + 1
         if start == -1 or end == -1:
@@ -58,16 +78,21 @@ def generate_menu_with_groq(calories, macros, preferencias, restricciones, promp
     # 🔹 Convertimos dict por turnos a lista de comidas individuales
     menu_list = []
     for turno, comidas in menu_dict.items():  # desayuno/comida/cena
+        if not isinstance(comidas, list):
+            raise ValueError(f"Esperaba lista de comidas en turno '{turno}', pero se recibió {type(comidas)}")
         for comida in comidas:
-            menu_list.append({
-                "turno": turno,
+            # Validar estructura mínima
+            comida_validada = {
                 "nombre": comida.get("nombre", "Comida"),
                 "ingredientes": comida.get("ingredientes", []),
                 "macros": comida.get("macros", {"carbohidratos_g": 0, "proteinas_g": 0, "grasas_g": 0}),
                 "calorias": comida.get("calorias", 0),
-                "completed": False  # por defecto
-            })
+                "completed": False
+            }
+            menu_list.append({"turno": turno, **comida_validada})
+            print(f"[DEBUG] Comida final agregada: {comida_validada}")
 
+    print(f"[DEBUG] Menu final generado: {menu_list}")
     return menu_list
 
 
@@ -76,6 +101,7 @@ def generate_meal_with_groq(meal_info, preferencias, restricciones):
     Genera una comida alternativa con macros similares usando la IA de Groq.
     Devuelve un dict listo para insertar en la tabla Meal.
     """
+
     preferencias_text = ', '.join(preferencias) if preferencias else 'ninguna'
     restricciones_text = ', '.join(restricciones) if restricciones else 'ninguna'
 
@@ -115,16 +141,14 @@ Comida original:
     response = requests.post(settings.GROQ_API_URL, headers=headers, json=payload)
     response.raise_for_status()
     content = response.json()["choices"][0]["message"]["content"]
+    print(f"[DEBUG] Contenido crudo de la IA para comida alternativa: {content}")
 
-    # 🔹 Intentamos cargar JSON directamente
     try:
         meal_dict = json.loads(content)
     except json.JSONDecodeError:
-        # 🔹 Como fallback, buscamos la primera llave que tenga sentido
         start = content.find("{")
         end = content.rfind("}") + 1
         if start == -1 or end == -1:
-            # Devolvemos dict seguro para no romper el endpoint
             return {
                 "nombre": meal_info.get("nombre", "Comida alternativa"),
                 "ingredientes": [],
@@ -132,17 +156,13 @@ Comida original:
                 "calorias": meal_info.get("calorias", 0),
                 "completed": False
             }
-        try:
-            meal_dict = json.loads(content[start:end])
-        except json.JSONDecodeError:
-            return {
-                "nombre": meal_info.get("nombre", "Comida alternativa"),
-                "ingredientes": [],
-                "macros": meal_info.get("macros", {"carbohidratos_g":0,"proteinas_g":0,"grasas_g":0}),
-                "calorias": meal_info.get("calorias", 0),
-                "completed": False
-            }
+        meal_dict = json.loads(content[start:end])
 
-    # 🔹 Añadimos completed por defecto
+    # Validación mínima
+    for key in ["nombre", "ingredientes", "macros", "calorias"]:
+        if key not in meal_dict:
+            meal_dict[key] = meal_info.get(key, [] if key == "ingredientes" else 0)
+
     meal_dict["completed"] = False
+    print(f"[DEBUG] Comida alternativa final: {meal_dict}")
     return meal_dict

@@ -1,4 +1,13 @@
+from requests import Session
 from models.enums import Gender, Goal
+from models.db_models import NutritionPlan, User
+from typing import Optional
+
+def get_user_plan_by_type(db: Session, user: User, tipo: str) -> Optional[NutritionPlan]:
+    return db.query(NutritionPlan).filter(
+        NutritionPlan.user_id == user.id,
+        NutritionPlan.tipo == tipo
+    ).order_by(NutritionPlan.created_at.desc()).first()
 
 def calcular_macros(data):
     # Calcular BMR
