@@ -1,18 +1,53 @@
-from requests import Session
+from sqlalchemy.orm import Session
 from models.enums import Gender, Goal
-from models.db_models import NutritionPlan, User
-from typing import Optional
+from models.db_models import Meal, NutritionPlan, User
+from typing import Optional, Dict
+
 
 def get_user_plan_by_type(db: Session, user: User, tipo: str) -> Optional[NutritionPlan]:
-    return db.query(NutritionPlan).filter(
+    plan = db.query(NutritionPlan).filter(
         NutritionPlan.user_id == user.id,
         NutritionPlan.tipo == tipo
     ).order_by(NutritionPlan.created_at.desc()).first()
 
-def calcular_macros(data):
-    # Calcular BMR
-    bmr = 10 * data.peso + 6.25 * data.altura - 5 * data.edad
-    bmr += 5 if data.genero == Gender.male else -161
+    if plan:
+        plan.menu = build_full_menu(plan)
+    return plan
+
+
+def build_full_menu(plan: NutritionPlan):
+    if not plan.menu:
+        # Si no hay mapping de IDs, devolver vacío
+        return {"desayuno": [], "comida": [], "cena": []}
+
+    menu_full = {}
+    for turno, meal_ids in plan.menu.items():
+        menu_full[turno] = [serialize_meal(meal) for meal in plan.meals if meal.id in meal_ids]
+    return menu_full
+
+
+
+def serialize_meal(meal: Meal) -> dict:
+    """
+    Convierte un objeto Meal en dict listo para la API, incluyendo plan_id.
+    """
+    return {
+        "id": meal.id,
+        "plan_id": meal.plan_id,  # 🔹 añadido
+        "nombre": meal.nombre,
+        "macros": meal.macros,
+        "calorias": meal.calorias,
+        "completed": meal.completed
+    }
+
+
+def calcular_macros(user: User):
+    """
+    Calcula calorías y macros aproximados según datos del usuario.
+    """
+    # BMR
+    bmr = 10 * user.peso + 6.25 * user.altura - 5 * user.edad
+    bmr += 5 if user.genero == Gender.male else -161
 
     activity_factors = {
         "sedentario": 1.2,
@@ -21,11 +56,11 @@ def calcular_macros(data):
         "activo": 1.725,
         "muy_activo": 1.9
     }
-    tdee = bmr * activity_factors.get(data.nivel_actividad, 1.2)
+    tdee = bmr * activity_factors.get(user.nivel_actividad, 1.2)
 
-    if data.objetivo == Goal.lose:
+    if user.objetivo == Goal.lose:
         calories = tdee - 500
-    elif data.objetivo == Goal.gain:
+    elif user.objetivo == Goal.gain:
         calories = tdee + 500
     else:
         calories = tdee

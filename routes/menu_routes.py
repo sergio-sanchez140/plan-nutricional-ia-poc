@@ -6,13 +6,12 @@ from models.db_models import NutritionPlan, User, Meal
 from models.plan_schemas import MenuTipoRequest, NutritionPlanRead, MealRead
 from db.database import get_db
 from utils.auth_utils import get_current_user
-from services.nutrition import calcular_macros, get_user_plan_by_type
+from services.nutrition import calcular_macros, get_user_plan_by_type, serialize_meal
 from services.groq_client import generate_meal_with_groq, generate_menu_with_groq
 from core.prompts import MENU_DIARIO_PROMPT, MENU_SEMANAL_PROMPT, MENU_MENSUAL_PROMPT
 from utils.validation_utils import validar_datos_usuario
 
 router = APIRouter()
-
 
 @router.post("/menus/generate", response_model=NutritionPlanRead)
 def generar_menu_ia(
@@ -20,31 +19,20 @@ def generar_menu_ia(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    # Validar datos del usuario
     validar_datos_usuario(current_user)
 
-    # 🔹 Revisar si ya existe un plan del tipo solicitado
+    # 🔹 Borrar plan existente si hay
     existing_plan = get_user_plan_by_type(db, current_user, menu_request.tipo)
     if existing_plan:
-        print(f"[INFO] Plan existente de tipo '{menu_request.tipo}' encontrado, eliminando...")
-        # Borrar comidas asociadas primero
-        deleted = db.query(Meal).filter(Meal.plan_id == existing_plan.id).delete()
-        print(f"[INFO] Comidas eliminadas: {deleted}")
-        # Borrar el plan
+        db.query(Meal).filter(Meal.plan_id == existing_plan.id).delete()
         db.delete(existing_plan)
         db.commit()
-        print("[INFO] Plan eliminado")
 
-    user_data = {
-        "edad": current_user.edad,
-        "peso": current_user.peso,
-        "altura": current_user.altura,
-        "nivel_actividad": current_user.nivel_actividad,
-        "objetivo": current_user.objetivo,
-        "preferencias": current_user.preferencias or [],
-        "restricciones": current_user.restricciones or []
-    }
-
+    # 🔹 Calcular calorías y macros
     calories, macros = calcular_macros(current_user)
+
+    # 🔹 Elegir prompt según tipo
     prompt_map = {
         "diario": MENU_DIARIO_PROMPT,
         "semanal": MENU_SEMANAL_PROMPT,
@@ -52,18 +40,15 @@ def generar_menu_ia(
     }
     prompt = prompt_map[menu_request.tipo]
 
-    print(f"[INFO] Generando menú con IA para {current_user.nombre}, tipo {menu_request.tipo}")
+    # 🔹 Generar comidas con IA
     comidas_generadas = generate_menu_with_groq(
         calories, macros,
-        user_data["preferencias"],
-        user_data["restricciones"],
+        current_user.preferencias or [],
+        current_user.restricciones or [],
         prompt
     )
 
-    print(f"[DEBUG] Tipo de comidas_generadas: {type(comidas_generadas)}")
-    for i, comida in enumerate(comidas_generadas):
-        print(f"[DEBUG] Comida {i}: {comida} (tipo {type(comida)})")
-
+    # 🔹 Crear nuevo plan
     new_plan = NutritionPlan(
         user_id=current_user.id,
         tipo=menu_request.tipo,
@@ -73,22 +58,10 @@ def generar_menu_ia(
     db.add(new_plan)
     db.commit()
     db.refresh(new_plan)
-    print(f"[INFO] Nuevo plan creado con ID {new_plan.id}")
 
-    # Guardar comidas y construir mapping turno -> meal_ids
-    menu_mapping: Dict[str, List[int]] = {}
-    for i, comida in enumerate(comidas_generadas):
-        # 🔹 Verificación de tipo antes de usar .get()
-        if not isinstance(comida, dict):
-            print(f"[WARNING] Comida {i} no es dict, convirtiendo a dict fallback")
-            comida = {
-                "nombre": str(comida),
-                "ingredientes": [],
-                "macros": {"carbohidratos_g":0,"proteinas_g":0,"grasas_g":0},
-                "calorias": 0
-            }
-
-        turno = comida.get("turno", "comida")
+    # 🔹 Guardar comidas y construir mapping por turno
+    saved_meals: List[tuple[Meal, str]] = []
+    for comida in comidas_generadas:
         meal = Meal(
             plan_id=new_plan.id,
             nombre=comida.get("nombre", "Comida"),
@@ -100,20 +73,23 @@ def generar_menu_ia(
         db.add(meal)
         db.commit()
         db.refresh(meal)
-        print(f"[INFO] Comida creada: {meal.nombre} (ID {meal.id}, turno {turno})")
+        saved_meals.append((meal, comida.get("turno", "comida")))
 
-        if turno not in menu_mapping:
-            menu_mapping[turno] = []
-        menu_mapping[turno].append(meal.id)
+    # 🔹 Construir menú completo para la respuesta
+    menu_full: Dict[str, List[dict]] = {"desayuno": [], "comida": [], "cena": []}
+    menu_ids: Dict[str, List[int]] = {"desayuno": [], "comida": [], "cena": []}
+    for meal, turno in saved_meals:
+        menu_full[turno].append(serialize_meal(meal))
+        menu_ids[turno].append(meal.id)
 
-    # Guardar mapping en plan
-    new_plan.menu = menu_mapping
+    # 🔹 Guardar mapping de IDs en plan
+    new_plan.menu = menu_ids
     db.commit()
     db.refresh(new_plan)
-    print(f"[INFO] Mapping de comidas guardado en plan: {menu_mapping}")
 
+    # 🔹 Adjuntar menú completo para la respuesta
+    new_plan.menu = menu_full
     return new_plan
-
 
 @router.get("/menus", response_model=List[NutritionPlanRead])
 def obtener_menus(

@@ -29,8 +29,8 @@ class NutritionPlanRead(BaseModel):
     calorias: float
     macros: Dict[str, float]
     created_at: datetime.datetime
-    meals: List[MealRead] = []  # comidas asociadas
-    menu: Dict[str, List[int]] = {}  # mapping turno -> lista de meal_ids
+    # 🔹 Reemplazamos meals y menu por un menú unificado
+    menu: Dict[str, List[MealRead]] = {}  # turno -> lista de comidas completas
 
     model_config = {
         "from_attributes": True,
