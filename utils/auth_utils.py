@@ -5,7 +5,7 @@ from db.database import get_db
 import jwt
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
-from models.db_models import User
+from models.db_models import User, TokenBlacklist
 from sqlalchemy.orm import Session
 
 # 🔹 Configuración
@@ -49,6 +49,11 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     if payload is None:
         raise HTTPException(status_code=401, detail="Token inválido o expirado")
     
+    # 🔹 Revisar si el token está en blacklist
+    blacklisted = db.query(TokenBlacklist).filter(TokenBlacklist.token == token).first()
+    if blacklisted:
+        raise HTTPException(status_code=401, detail="Token revocado")
+
     user = db.query(User).filter(User.email == payload.get("sub")).first()
     if user is None:
         raise HTTPException(status_code=401, detail="Usuario no encontrado")

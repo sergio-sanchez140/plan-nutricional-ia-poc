@@ -50,3 +50,11 @@ class Meal(Base):
     completed = Column(Boolean, default=False)
 
     plan = relationship("NutritionPlan", back_populates="meals")
+
+
+class TokenBlacklist(Base):
+    __tablename__ = "token_blacklist"
+
+    id = Column(Integer, primary_key=True, index=True)
+    token = Column(String, unique=True, nullable=False, index=True)
+    created_at = Column(DateTime, server_default=func.now())

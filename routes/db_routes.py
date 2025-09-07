@@ -2,11 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from db.database import get_db
-from models.db_models import User
+from models.db_models import TokenBlacklist, User
 from models.user_data import UserCreate, UserUpdate, UserLogin
 from models.db_models import NutritionPlan, User
 from models.plan_schemas import NutritionPlanCreate
-from utils.auth_utils import create_access_token, get_current_user, verify_password
+from utils.auth_utils import create_access_token, get_current_user, verify_password, oauth2_scheme
 
 router = APIRouter()
 
@@ -101,3 +101,14 @@ def read_me(current_user: User = Depends(get_current_user)):
         "preferencias": current_user.preferencias,
         "restricciones": current_user.restricciones
     }
+
+@router.post("/logout")
+def logout(
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    # Guardar token en blacklist
+    db.add(TokenBlacklist(token=token))
+    db.commit()
+    return {"message": "Sesión cerrada correctamente"}
