@@ -1,3 +1,7 @@
+from pydantic import BaseModel
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
+from core.config import settings
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
@@ -7,6 +11,9 @@ from models.user_data import UserCreate, UserUpdate, UserLogin
 from models.db_models import NutritionPlan, User
 from models.plan_schemas import NutritionPlanCreate
 from utils.auth_utils import create_access_token, get_current_user, verify_password, oauth2_scheme
+
+class GoogleToken(BaseModel):
+    token: str
 
 router = APIRouter()
 
@@ -124,3 +131,52 @@ def logout(
     db.add(TokenBlacklist(token=token))
     db.commit()
     return {"message": "Sesión cerrada correctamente"}
+
+@router.post("/login/google")
+def google_login(token_data: GoogleToken, db: Session = Depends(get_db)):
+    try:
+        # 1. Validar ticket con Google
+        idinfo = id_token.verify_oauth2_token(
+            token_data.token, 
+            google_requests.Request(), 
+            settings.GOOGLE_CLIENT_ID
+        )
+        
+        # 2. Extraer datos del perfil de Google
+        email = idinfo['email']
+        nombre = idinfo.get('name', 'Usuario Google')
+        
+        # 3. Buscar si el usuario ya existe en nuestra base de datos
+        user = db.query(User).filter(User.email == email).first()
+        
+        if not user:
+            # 4. Si no existe, lo registramos automáticamente.
+            # Usamos tu función hash_password con una contraseña imposible.
+            user = User(
+                email=email,
+                hashed_password=hash_password(f"google_dummy_{email}_2026"),
+                nombre=nombre
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+
+        # 5. Generar nuestro token JWT (igual que en tu /login normal)
+        access_token = create_access_token(data={"sub": user.email})
+        
+        # 6. Devolver respuesta a Flutter
+        return {
+            "access_token": access_token, 
+            "token_type": "bearer",
+            "user_id": user.id,
+            "email": user.email,
+            "nombre": user.nombre
+        }
+
+    except ValueError:
+        # Si el token no es válido o ha caducado
+        raise HTTPException(
+            status_code=401,
+            detail="El token de Google es inválido o ha caducado",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
