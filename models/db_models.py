@@ -1,6 +1,7 @@
-from sqlalchemy import Column, Integer, String, Float, JSON, DateTime, ForeignKey, Boolean, func
+from sqlalchemy import Column, Integer, String, Float, JSON, DateTime, Date, ForeignKey, Boolean, func
 from sqlalchemy.orm import relationship
 from db.database import Base
+from datetime import date
 
 class User(Base):
     __tablename__ = "users"
@@ -35,7 +36,18 @@ class NutritionPlan(Base):
     menu = Column(JSON, nullable=True)  # ej: {"desayuno": [1,2], "comida": [3], "cena": [4,5]}
 
     user = relationship("User", back_populates="plans")
-    meals = relationship("Meal", back_populates="plan", cascade="all, delete-orphan")
+
+    meals = relationship(
+        "Meal",
+        back_populates="plan",
+        cascade="all, delete-orphan"
+    )
+
+    adjustments = relationship(
+        "PlanAdjustment",
+        back_populates="plan",
+        cascade="all, delete-orphan"
+    )
 
 
 class Meal(Base):
@@ -58,3 +70,35 @@ class TokenBlacklist(Base):
     id = Column(Integer, primary_key=True, index=True)
     token = Column(String, unique=True, nullable=False, index=True)
     created_at = Column(DateTime, server_default=func.now())
+
+class UserIntake(Base):
+    __tablename__ = "user_intakes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    fecha = Column(Date, nullable=False, default=date.today)  # día de la ingesta
+    alimentos = Column(JSON, nullable=False)  # lista de {"nombre": "...", "cantidad_g": ...}
+    calorias = Column(Integer, nullable=False, default=0)
+    macros = Column(JSON, nullable=False, default={"carbohidratos_g":0,"proteinas_g":0,"grasas_g":0})
+    created_at = Column(DateTime, server_default=func.now())
+
+    user = relationship("User", backref="intakes")
+
+
+class PlanAdjustment(Base):
+    """
+    Guarda ajustes aplicados a un plan para una fecha concreta.
+    """
+    __tablename__ = "plan_adjustments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    plan_id = Column(Integer, ForeignKey("nutrition_plans.id"), nullable=False)
+    fecha = Column(Date, nullable=False, default=date.today)
+    adjusted_menu = Column(JSON, nullable=False)  # menú corregido (estructura por turnos con comidas serializadas)
+    reason = Column(String, nullable=True)  # opcional: razón / descripción
+    created_at = Column(DateTime, server_default=func.now())
+
+    plan = relationship(
+        "NutritionPlan",
+        back_populates="adjustments"
+    )

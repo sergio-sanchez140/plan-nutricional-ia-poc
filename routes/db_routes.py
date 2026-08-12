@@ -18,19 +18,31 @@ def hash_password(password: str) -> str:
 # 🔹 Crear usuario
 @router.post("/users")
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
-    # Pydantic ya validó `nombre` y `password` antes de entrar aquí
     if db.query(User).filter(User.email == user.email).first():
         raise HTTPException(status_code=400, detail="El email ya está registrado")
 
     db_user = User(
         nombre=user.nombre,
         email=user.email,
-        hashed_password=hash_password(user.password)  # SQLAlchemy necesita este campo
+        hashed_password=hash_password(user.password)
     )
+
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
-    return {"id": db_user.id, "nombre": db_user.nombre, "email": db_user.email}
+
+    # 🔥 AUTO LOGIN
+    access_token = create_access_token(data={"sub": db_user.email})
+
+    return {
+        "user": {
+            "id": db_user.id,
+            "nombre": db_user.nombre,
+            "email": db_user.email
+        },
+        "access_token": access_token,
+        "token_type": "bearer"
+    }
 
 # 🔹 Actualizar usuario
 @router.put("/users/{email}")

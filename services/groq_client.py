@@ -60,6 +60,10 @@ No agregues texto fuera del JSON. Cada comida debe tener todos los campos.
     }
 
     response = requests.post(settings.GROQ_API_URL, headers=headers, json=payload)
+
+    if response.status_code != 200:
+        print(f"[ERROR GROQ] {response.status_code} - {response.text}")
+
     response.raise_for_status()
 
     content = response.json()["choices"][0]["message"]["content"]
@@ -178,3 +182,75 @@ Comida original:
     meal_dict["completed"] = False
     print(f"[DEBUG] Comida alternativa final: {meal_dict}")
     return meal_dict
+
+def generate_adjusted_menu_with_groq(macros_restantes, calorias_restantes, preferencias, restricciones):
+    """
+    Solicita a la IA un menú para compensar exactamente los macros y calorías restantes.
+    """
+    preferencias_text = ', '.join(preferencias) if preferencias else 'ninguna'
+    restricciones_text = ', '.join(restricciones) if restricciones else 'ninguna'
+
+    prompt = f"""
+    Eres un nutricionista experto. El usuario ya ha consumido parte de su dieta de hoy.
+    Le quedan EXACTAMENTE estas metas para completar el día:
+    - Calorías restantes: {calorias_restantes} kcal
+    - Carbohidratos restantes: {macros_restantes.get('carbohidratos_g', 0)} g
+    - Proteínas restantes: {macros_restantes.get('proteinas_g', 0)} g
+    - Grasas restantes: {macros_restantes.get('grasas_g', 0)} g
+
+    Preferencias: {preferencias_text}. Restricciones: {restricciones_text}.
+
+    Genera las comidas necesarias para cubrir lo mejor posible estos macros restantes.
+    Distribúyelas lógicamente. Si faltan muchas calorías, divídelo en "comida" y "cena". Si faltan pocas, solo "cena" o "snack".
+
+    Devuelve SOLO un JSON válido con esta estructura (omite turnos que no procedan):
+    {{
+      "comida": [
+        {{
+          "nombre": "string",
+          "ingredientes": [{{"nombre": "string", "cantidad_g": 100}}],
+          "macros": {{"carbohidratos_g": 0, "proteinas_g": 0, "grasas_g": 0}},
+          "calorias": 0
+        }}
+      ],
+      "cena": [ ... ]
+    }}
+    """
+
+    headers = {
+        "Authorization": f"Bearer {settings.GROQ_API_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "model": settings.GROQ_MODEL,
+        "messages": [
+            {"role": "system", "content": "Eres un nutricionista experto que responde SOLO con JSON válido."},
+            {"role": "user", "content": prompt}
+        ],
+        "temperature": 0.7,
+        "max_tokens": 1000
+    }
+
+    response = requests.post(settings.GROQ_API_URL, headers=headers, json=payload)
+    if response.status_code != 200:
+        print(f"[ERROR GROQ] {response.status_code} - {response.text}")
+    response.raise_for_status()
+
+    content = response.json()["choices"][0]["message"]["content"]
+    
+    # Extraer JSON de forma segura
+    import re
+    import json
+    match = re.search(r'\{.*\}', content, re.DOTALL)
+    if not match:
+        raise ValueError("No se encontró JSON válido en el recálculo")
+    
+    menu_dict = json.loads(match.group())
+    
+    # Asegurar que todas las comidas tienen el flag "completed" a False
+    for turno, comidas in menu_dict.items():
+        for comida in comidas:
+            comida["completed"] = False
+            
+    return menu_dict
