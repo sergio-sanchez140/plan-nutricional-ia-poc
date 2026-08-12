@@ -36,11 +36,13 @@ def build_full_menu(plan: NutritionPlan):
 
 def serialize_meal(meal: Meal) -> dict:
     """
-    Convierte un objeto Meal en dict listo para la API, incluyendo plan_id.
+    Convierte un objeto Meal en dict listo para la API.
     """
     return {
         "id": meal.id,
-        "plan_id": meal.plan_id,  # 🔹 añadido
+        "plan_id": meal.plan_id,
+        "dia": meal.dia,       # 🔹 NUEVO
+        "turno": meal.turno,   # 🔹 NUEVO
         "nombre": meal.nombre,
         "macros": meal.macros,
         "calorias": meal.calorias,

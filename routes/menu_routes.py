@@ -74,38 +74,54 @@ def generar_menu_ia(
 
     print(comidas_generadas)
 
-    # 🔹 Guardar comidas y construir mapping por turno
-    saved_meals: List[tuple[Meal, str]] = []
+   # 🔹 Guardar comidas en Base de Datos
+    saved_meals: List[Meal] = []
     for comida in comidas_generadas:
         meal = Meal(
             plan_id=new_plan.id,
+            dia=comida.get("dia", 1), # 🔹 Por defecto 1 (ideal para menú diario)
+            turno=comida.get("turno", "comida"), # 🔹 Guardamos su turno real
             nombre=comida.get("nombre", "Comida"),
             alimentos=comida.get("ingredientes", []),
             macros=comida.get("macros", {"carbohidratos_g":0,"proteinas_g":0,"grasas_g":0}),
             calorias=comida.get("calorias", 0),
             completed=False
         )
-        print(comida.get("turno"))
         db.add(meal)
         db.commit()
         db.refresh(meal)
-        saved_meals.append((meal, comida.get("turno", "comida")))
+        saved_meals.append(meal)
 
-    # 🔹 Construir menú completo para la respuesta
-    menu_full: Dict[str, List[dict]] = {"desayuno": [], "comida": [], "cena": []}
-    menu_ids: Dict[str, List[int]] = {"desayuno": [], "comida": [], "cena": []}
-    for meal, turno in saved_meals:
-        menu_full[turno].append(serialize_meal(meal))
-        menu_ids[turno].append(meal.id)
+    # 🔹 Construir menú completo agrupado por DÍA y luego por TURNO
+    menu_full: Dict[str, Dict[str, List[dict]]] = {}
+    menu_ids: Dict[str, Dict[str, List[int]]] = {}
 
-    # 🔹 Guardar mapping de IDs en plan
+    for meal in saved_meals:
+        dia_str = str(meal.dia)
+        turno = meal.turno
+
+        # Inicializar el día si no existe
+        if dia_str not in menu_full:
+            menu_full[dia_str] = {"desayuno": [], "comida": [], "cena": []}
+            menu_ids[dia_str] = {"desayuno": [], "comida": [], "cena": []}
+        
+        # Inicializar el turno si Groq se inventa uno nuevo (ej. "snack")
+        if turno not in menu_full[dia_str]:
+            menu_full[dia_str][turno] = []
+            menu_ids[dia_str][turno] = []
+
+        # Agregar la comida a su día y turno correspondiente
+        menu_full[dia_str][turno].append(serialize_meal(meal))
+        menu_ids[dia_str][turno].append(meal.id)
+
+    # 🔹 Guardar mapping de IDs en el plan
     new_plan.menu = menu_ids
     db.commit()
     db.refresh(new_plan)
 
-    print(menu_ids)
+    print(f"[DEBUG] IDs agrupados: {menu_ids}")
 
-    # 🔹 Adjuntar menú completo para la respuesta
+    # 🔹 Adjuntar menú completo para la respuesta del Frontend
     new_plan.menu = menu_full
     return new_plan
 

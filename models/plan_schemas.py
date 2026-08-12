@@ -6,6 +6,8 @@ from pydantic import BaseModel
 class MealRead(BaseModel):
     id: int
     plan_id: int
+    dia: int      # <-- NUEVO
+    turno: str    # <-- NUEVO
     nombre: str
     macros: Dict[str, float]
     calorias: float
@@ -29,8 +31,8 @@ class NutritionPlanRead(BaseModel):
     calorias: float
     macros: Dict[str, float]
     created_at: datetime.datetime
-    # 🔹 Reemplazamos meals y menu por un menú unificado
-    menu: Dict[str, List[MealRead]] = {}  # turno -> lista de comidas completas
+    # 🔹 Ahora acepta tanto {"desayuno": [...]} como {"1": {"desayuno": [...]}}
+    menu: Dict[str, Any] = {} 
 
     model_config = {
         "from_attributes": True,

@@ -55,9 +55,14 @@ class Meal(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     plan_id = Column(Integer, ForeignKey("nutrition_plans.id"), nullable=False)
-    nombre = Column(String, nullable=False)  # nombre de la comida
-    alimentos = Column(JSON, nullable=False)  # lista de ingredientes con cantidades
-    macros = Column(JSON, nullable=False)  # {carbohidratos, proteínas, grasas}
+    
+    # 🔹 NUEVOS CAMPOS PARA EL CALENDARIO 🔹
+    dia = Column(Integer, nullable=False, default=1)  # Ej: 1=Lunes, 2=Martes... hasta 7.
+    turno = Column(String, nullable=False, default="comida")  # desayuno, comida, cena, snack
+    
+    nombre = Column(String, nullable=False) # nombre de la comida
+    alimentos = Column(JSON, nullable=False) # lista de ingredientes con cantidades
+    macros = Column(JSON, nullable=False) # {carbohidratos, proteínas, grasas}
     calorias = Column(Float, nullable=False)
     completed = Column(Boolean, default=False)
 
