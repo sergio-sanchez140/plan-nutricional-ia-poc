@@ -127,37 +127,56 @@ def generar_menu_ia(
 
 @router.get("/menus", response_model=List[NutritionPlanRead])
 def obtener_menus(
-    tipo: str = None,
+    tipo: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    if tipo:
-        # 🔹 Buscar el plan del usuario según tipo
-        plan = get_user_plan_by_type(db, current_user, tipo)
-        if not plan:
-            return []
-
-        # 🔹 Obtener lo consumido hoy
-        consumed_cal, consumed_macros = get_total_intake_for_date(db, current_user)
-
-        # 🔹 Calcular diferencias
-        gap = calculate_gap_for_day(plan, consumed_cal, consumed_macros)
-
-        # 🔹 (Opcional) Generar menú ajustado según gap
-        # Aquí podemos llamar a un motor IA o a un fallback.
-        adjusted_menu = generate_adjusted_menu(plan, gap, current_user)
-
-        # 🔹 Guardar ajuste en DB (para persistencia del día)
-        save_plan_adjustment(db, plan, adjusted_menu)
-
-        return [{
-            **plan.__dict__,
-            "menu": adjusted_menu
-        }]
-
-    # 🔹 Caso sin filtro: devolver todos los planes del usuario
+    # 1. Obtener los planes del usuario según si hay filtro de tipo o no
     query = db.query(NutritionPlan).filter(NutritionPlan.user_id == current_user.id)
-    return query.order_by(NutritionPlan.created_at.desc()).all()
+    if tipo:
+        query = query.filter(NutritionPlan.tipo == tipo)
+    
+    planes = query.order_by(NutritionPlan.created_at.desc()).all()
+
+    # Si no hay planes, devolvemos lista vacía
+    if not planes:
+        return []
+
+    resultado = []
+
+    for plan in planes:
+        # 2. Recuperar todas las comidas asociadas a este plan desde la DB
+        meals = db.query(Meal).filter(Meal.plan_id == plan.id).all()
+
+        # 3. Reconstruir la estructura del menú por día y turno
+        menu_full: Dict[str, Dict[str, List[dict]]] = {}
+        
+        for meal in meals:
+            dia_str = str(meal.dia)
+            turno = meal.turno
+
+            if dia_str not in menu_full:
+                menu_full[dia_str] = {"desayuno": [], "almuerzo": [], "comida": [], "cena": []}
+            
+            if turno not in menu_full[dia_str]:
+                menu_full[dia_str][turno] = []
+
+            menu_full[dia_str][turno].append(serialize_meal(meal))
+
+        # 4. Crear un diccionario con los datos del plan y el menú reconstruido
+        plan_dict = {
+            "id": plan.id,
+            "user_id": plan.user_id,
+            "tipo": plan.tipo,
+            "calorias": plan.calorias,
+            "macros": plan.macros,
+            "created_at": plan.created_at,
+            "menu": menu_full
+        }
+        
+        resultado.append(plan_dict)
+
+    return resultado
 
 @router.post("/menus/{plan_id}/replace-meal/{meal_id}")
 def sustituir_comida(
