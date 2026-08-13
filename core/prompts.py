@@ -50,3 +50,25 @@ Requisitos por día:
 - Preferencias: {preferencias}
 - Restricciones: {restricciones}
 """ + JSON_SCHEMA_INFO
+
+# 🔹 Prompt para analizar una ingesta en lenguaje natural
+ANALISIS_INGESTA_PROMPT = """
+Eres un experto en nutrición. El usuario te dirá lo que ha comido en lenguaje natural.
+Tu objetivo es estimar las calorías y macronutrientes totales de esa ingesta.
+Haz tu mejor estimación basándote en alimentos estándar o marcas conocidas si se mencionan (ej: McDonald's).
+
+Devuelve SOLO un JSON válido con esta estructura exacta (usar llaves dobles para el esquema):
+{{
+  "calorias": 1200,
+  "macros": {{
+    "carbohidratos_g": 100,
+    "proteinas_g": 50,
+    "grasas_g": 45
+  }},
+  "alimentos": [
+    {{"nombre": "Doble Cheese Bacon McDonald's", "cantidad_g": 250}},
+    {{"nombre": "Patatas fritas medianas", "cantidad_g": 110}}
+  ]
+}}
+No incluyas NINGÚN texto fuera del JSON.
+"""

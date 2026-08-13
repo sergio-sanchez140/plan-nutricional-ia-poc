@@ -1,8 +1,38 @@
 # services/groq_client.py
+# services/groq_client.py
 import re
 import requests
 import json
 from core.config import settings
+from core.prompts import ANALISIS_INGESTA_PROMPT
+
+def analyze_intake_with_groq(texto_ingesta: str) -> dict:
+    """Envía el texto libre del usuario a la IA para estimar calorías y macros."""
+    prompt = f"{ANALISIS_INGESTA_PROMPT}\n\nIngesta del usuario: '{texto_ingesta}'"
+    
+    headers = {
+        "Authorization": f"Bearer {settings.GROQ_API_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "model": settings.GROQ_MODEL,
+        "messages": [
+            {"role": "system", "content": "Eres un experto en nutrición que devuelve SOLO JSON válido."},
+            {"role": "user", "content": prompt}
+        ],
+        "temperature": 0.2, 
+        "response_format": {"type": "json_object"}
+    }
+    
+    response = requests.post(settings.GROQ_API_URL, headers=headers, json=payload)
+    
+    if response.status_code != 200:
+        print(f"[ERROR GROQ] {response.status_code} - {response.text}")
+    response.raise_for_status()
+    
+    contenido = response.json()["choices"][0]["message"]["content"]
+    return json.loads(contenido)
 
 def generate_menu_with_groq(calories, macros, preferencias, restricciones, prompt_template):
     """

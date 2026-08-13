@@ -22,9 +22,46 @@ from services.nutrition import (
 from services.groq_client import generate_meal_with_groq, generate_menu_with_groq
 from core.prompts import MENU_DIARIO_PROMPT, MENU_SEMANAL_PROMPT, MENU_MENSUAL_PROMPT
 from utils.validation_utils import validar_datos_usuario
-
+from services.groq_client import analyze_intake_with_groq
 
 router = APIRouter()
+
+@router.post("/intakes")
+def create_intake(
+    texto_ingesta: str = Body(..., example="Una doble cheese bacon del mcdonalds y un vaso de coca cola cero"),
+    fecha: Optional[str] = Body(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Registrar una ingesta del usuario pasándole texto libre. La IA estima todo.
+    """
+    try:
+        # 1. Magia de la IA: analizamos el texto libre
+        analisis = analyze_intake_with_groq(texto_ingesta)
+        
+        # 2. Formatear la fecha si viene
+        f = date.fromisoformat(fecha) if fecha else None
+        
+        # 3. Guardar en la base de datos usando tu función existente
+        intake = record_user_intake(
+            db=db,
+            user=current_user,
+            alimentos=analisis["alimentos"],
+            calorias=analisis["calorias"],
+            macros=analisis["macros"],
+            fecha=f
+        )
+        
+        # 4. Devolvemos el ID y también lo que la IA ha calculado para mostrárselo al usuario
+        return {
+            "ok": True, 
+            "intake_id": intake.id,
+            "analisis_ia": analisis
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al analizar la ingesta: {str(e)}")
 
 @router.post("/menus/generate", response_model=NutritionPlanRead)
 def generar_menu_ia(
@@ -237,26 +274,6 @@ def toggle_meal_completed(
     db.commit()
     db.refresh(meal)
     return meal
-
-@router.post("/intakes")
-def create_intake(
-    alimentos: List[Dict[str,Any]] = Body(..., example=[{"nombre":"Big Mac","cantidad_g":200}]),
-    calorias: int = Body(..., example=563),
-    macros: Dict[str,int] = Body(..., example={"carbohidratos_g":45,"proteinas_g":25,"grasas_g":33}),
-    fecha: Optional[str] = Body(None),
-    db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
-):
-    """
-    Registrar una ingesta del usuario (comida real).
-    fecha: ISO YYYY-MM-DD opcional (default hoy)
-    """
-    f = date.fromisoformat(fecha) if fecha else None
-    try:
-        intake = record_user_intake(db, current_user, alimentos, calorias, macros, f)
-        return {"ok": True, "intake_id": intake.id}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/menus/{plan_id}/adjust")
 def adjust_plan_for_date(
