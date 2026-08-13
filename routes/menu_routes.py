@@ -26,6 +26,28 @@ from services.groq_client import analyze_intake_with_groq
 
 router = APIRouter()
 
+@router.get("/intakes/today")
+def get_today_intake(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Devuelve las calorías y macros totales consumidos en el día actual.
+    """
+    from datetime import date
+    
+    # Usamos la fecha de hoy
+    hoy = date.today()
+    
+    # Usamos tu función existente para calcular los totales
+    consumed_cal, consumed_macros = get_total_intake_for_date(db, current_user, hoy)
+    
+    return {
+        "fecha": str(hoy),
+        "calorias_consumidas": consumed_cal,
+        "macros_consumidos": consumed_macros
+    }
+
 @router.post("/intakes")
 def create_intake(
     texto_ingesta: str = Body(..., example="Una doble cheese bacon del mcdonalds y un vaso de coca cola cero"),

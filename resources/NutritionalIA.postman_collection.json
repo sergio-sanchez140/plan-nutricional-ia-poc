@@ -1,6 +1,6 @@
 {
   "info": {
-    "_postman_id": "d53abcff-d6f6-4798-8516-46fcf2edbeba",
+    "_postman_id": "87edebcc-4001-4edc-97ee-9701736c2f5d",
     "name": "NutritionalIA",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "48051394"
@@ -332,7 +332,7 @@
       "response": []
     },
     {
-      "name": "Complete Meal",
+      "name": "Instake Meal",
       "request": {
         "method": "POST",
         "header": [
@@ -347,7 +347,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\r\n    \"alimentos\": [\r\n        {\"nombre\": \"Doble hamburguesa con queso y bacon\", \"cantidad_g\": 350},\r\n        {\"nombre\": \"Patatas fritas grandes\", \"cantidad_g\": 200}\r\n    ],\r\n    \"calorias\": 1500,\r\n    \"macros\": {\r\n        \"carbohidratos_g\": 150,\r\n        \"proteinas_g\": 50,\r\n        \"grasas_g\": 80\r\n    }\r\n}",
+          "raw": "{\r\n    \"texto_ingesta\": \"Dos porciones de pizza barbacoa de telepizza\"\r\n}",
           "options": {
             "raw": {
               "language": "json"
@@ -367,6 +367,52 @@
           "path": [
             "ai",
             "intakes"
+          ]
+        },
+        "description": "Generated from cURL: curl -X POST \"http://127.0.0.1:8000/ai/menus/1/replace-meal\" \\\r\n-H \"Content-Type: application/json\" \\\r\n-H \"Authorization: Bearer TU_TOKEN_AQUI\" \\\r\n-d '{\r\n  \"nombre\": \"almuerzo\",\r\n  \"calorias\": 600,\r\n  \"macros\": {\r\n    \"carbohidratos_g\": 75,\r\n    \"proteinas_g\": 40,\r\n    \"grasas_g\": 20\r\n  }\r\n}'\r\n"
+      },
+      "response": []
+    },
+    {
+      "name": "Instake Meal Today",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "{{access_token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"texto_ingesta\": \"Dos porciones de pizza barbacoa de telepizza\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://127.0.0.1:8000/ai/intakes/today",
+          "protocol": "http",
+          "host": [
+            "127",
+            "0",
+            "0",
+            "1"
+          ],
+          "port": "8000",
+          "path": [
+            "ai",
+            "intakes",
+            "today"
           ]
         },
         "description": "Generated from cURL: curl -X POST \"http://127.0.0.1:8000/ai/menus/1/replace-meal\" \\\r\n-H \"Content-Type: application/json\" \\\r\n-H \"Authorization: Bearer TU_TOKEN_AQUI\" \\\r\n-d '{\r\n  \"nombre\": \"almuerzo\",\r\n  \"calorias\": 600,\r\n  \"macros\": {\r\n    \"carbohidratos_g\": 75,\r\n    \"proteinas_g\": 40,\r\n    \"grasas_g\": 20\r\n  }\r\n}'\r\n"
@@ -407,6 +453,47 @@
             {
               "key": "id_menu",
               "value": "2"
+            }
+          ]
+        },
+        "description": "Generated from cURL: curl -X POST \"http://127.0.0.1:8000/ai/menus/1/replace-meal\" \\\r\n-H \"Content-Type: application/json\" \\\r\n-H \"Authorization: Bearer TU_TOKEN_AQUI\" \\\r\n-d '{\r\n  \"nombre\": \"almuerzo\",\r\n  \"calorias\": 600,\r\n  \"macros\": {\r\n    \"carbohidratos_g\": 75,\r\n    \"proteinas_g\": 40,\r\n    \"grasas_g\": 20\r\n  }\r\n}'\r\n"
+      },
+      "response": []
+    },
+    {
+      "name": "Complete Meal",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "{{access_token}}"
+          }
+        ],
+        "url": {
+          "raw": "http://127.0.0.1:8000/ai/meals/:meal_id/toggle",
+          "protocol": "http",
+          "host": [
+            "127",
+            "0",
+            "0",
+            "1"
+          ],
+          "port": "8000",
+          "path": [
+            "ai",
+            "meals",
+            ":meal_id",
+            "toggle"
+          ],
+          "variable": [
+            {
+              "key": "meal_id",
+              "value": "1"
             }
           ]
         },
