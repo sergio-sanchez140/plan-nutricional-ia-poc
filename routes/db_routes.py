@@ -1,4 +1,6 @@
 from pydantic import BaseModel
+from typing import Optional
+import requests
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 from core.config import settings
@@ -13,7 +15,8 @@ from models.plan_schemas import NutritionPlanCreate
 from utils.auth_utils import create_access_token, get_current_user, verify_password, oauth2_scheme
 
 class GoogleToken(BaseModel):
-    token: str
+    id_token: Optional[str] = None
+    access_token: Optional[str] = None
 
 router = APIRouter()
 
@@ -134,24 +137,45 @@ def logout(
 
 @router.post("/login/google")
 def google_login(token_data: GoogleToken, db: Session = Depends(get_db)):
+    email = None
+    nombre = "Usuario Google"
+
     try:
-        # 1. Validar ticket con Google
-        idinfo = id_token.verify_oauth2_token(
-            token_data.token, 
-            google_requests.Request(), 
-            settings.GOOGLE_CLIENT_ID
-        )
-        
-        # 2. Extraer datos del perfil de Google
-        email = idinfo['email']
-        nombre = idinfo.get('name', 'Usuario Google')
-        
-        # 3. Buscar si el usuario ya existe en nuestra base de datos
+        if token_data.id_token:
+            # Flujo A: Móvil (Validamos el id_token criptográficamente)
+            idinfo = id_token.verify_oauth2_token(
+                token_data.id_token, 
+                google_requests.Request(), 
+                settings.GOOGLE_CLIENT_ID
+            )
+            email = idinfo['email']
+            nombre = idinfo.get('name', 'Usuario Google')
+            
+        elif token_data.access_token:
+            # Flujo B: Web (Consultamos el perfil a la API de Google con el access_token)
+            response = requests.get(
+                "https://www.googleapis.com/oauth2/v3/userinfo",
+                headers={"Authorization": f"Bearer {token_data.access_token}"}
+            )
+            if response.status_code != 200:
+                raise ValueError("Access token inválido o caducado")
+            
+            user_info = response.json()
+            email = user_info['email']
+            nombre = user_info.get('name', 'Usuario Google')
+            
+        else:
+            # Si nos mandan un JSON vacío
+            raise HTTPException(
+                status_code=400, 
+                detail="Se requiere id_token (móvil) o access_token (web)"
+            )
+
+        # Buscar si el usuario ya existe en nuestra base de datos
         user = db.query(User).filter(User.email == email).first()
         
         if not user:
-            # 4. Si no existe, lo registramos automáticamente.
-            # Usamos tu función hash_password con una contraseña imposible.
+            # Si no existe, lo registramos automáticamente
             user = User(
                 email=email,
                 hashed_password=hash_password(f"google_dummy_{email}_2026"),
@@ -161,10 +185,10 @@ def google_login(token_data: GoogleToken, db: Session = Depends(get_db)):
             db.commit()
             db.refresh(user)
 
-        # 5. Generar nuestro token JWT (igual que en tu /login normal)
+        # Generar NUESTRO token JWT (igual que en el login normal)
         access_token = create_access_token(data={"sub": user.email})
         
-        # 6. Devolver respuesta a Flutter
+        # Devolver respuesta a Flutter (Front)
         return {
             "access_token": access_token, 
             "token_type": "bearer",
@@ -174,9 +198,8 @@ def google_login(token_data: GoogleToken, db: Session = Depends(get_db)):
         }
 
     except ValueError:
-        # Si el token no es válido o ha caducado
         raise HTTPException(
             status_code=401,
-            detail="El token de Google es inválido o ha caducado",
+            detail="Las credenciales de Google son inválidas o han caducado",
             headers={"WWW-Authenticate": "Bearer"},
         )

@@ -32,20 +32,38 @@ def get_today_intake(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Devuelve las calorías y macros totales consumidos en el día actual.
+    Devuelve las calorías, macros totales consumidos en el día actual y el historial.
     """
     from datetime import date
     
-    # Usamos la fecha de hoy
     hoy = date.today()
     
-    # Usamos tu función existente para calcular los totales
+    # 1. Cálculos totales con tu función existente
     consumed_cal, consumed_macros = get_total_intake_for_date(db, current_user, hoy)
+    
+    # 2. Rescatar el historial de comidas del plan completadas
+    # Primero buscamos los IDs de los planes del usuario
+    planes = db.query(NutritionPlan).filter(NutritionPlan.user_id == current_user.id).all()
+    plan_ids = [p.id for p in planes]
+    
+    # Luego buscamos las comidas de esos planes que estén completadas
+    comidas_completadas = db.query(Meal).filter(
+        Meal.plan_id.in_(plan_ids),
+        Meal.completed == True
+    ).all()
+    
+    # Creamos un array limpio solo con los nombres
+    historial = [meal.nombre for meal in comidas_completadas]
+    
+    # Nota: Si tienes un modelo ORM específico para las ingestas libres (ej. 'Intake'),
+    # puedes consultarlo aquí y sumarlo a la lista con:
+    # historial.extend([ingesta.nombre for ingesta in ingestas_libres_de_hoy])
     
     return {
         "fecha": str(hoy),
         "calorias_consumidas": consumed_cal,
-        "macros_consumidos": consumed_macros
+        "macros_consumidos": consumed_macros,
+        "historial": historial
     }
 
 @router.post("/intakes")
