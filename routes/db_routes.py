@@ -13,6 +13,9 @@ from models.user_data import UserCreate, UserUpdate, UserLogin
 from models.db_models import NutritionPlan, User
 from models.plan_schemas import NutritionPlanCreate
 from utils.auth_utils import create_access_token, get_current_user, verify_password, oauth2_scheme
+from fastapi import File, UploadFile
+import cloudinary
+import cloudinary.uploader
 
 class GoogleToken(BaseModel):
     id_token: Optional[str] = None
@@ -25,6 +28,37 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
 
+# Inicializar configuración de Cloudinary
+cloudinary.config(
+    cloud_name=settings.CLOUDINARY_CLOUD_NAME,
+    api_key=settings.CLOUDINARY_API_KEY,
+    api_secret=settings.CLOUDINARY_API_SECRET
+)
+
+@router.post("/users/me/avatar")
+def upload_avatar(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    # Validación básica de formato
+    if not file.filename.lower().endswith(('.png', '.jpg', '.jpeg', '.webp')):
+        raise HTTPException(status_code=400, detail="Formato de imagen no soportado")
+        
+    try:
+        # Subimos el binario a la nube
+        result = cloudinary.uploader.upload(file.file)
+        secure_url = result.get("secure_url")
+        
+        # Guardamos la URL pública en nuestra BD
+        current_user.avatar_url = secure_url
+        db.commit()
+        
+        return {"avatar_url": secure_url}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error subiendo a la nube: {str(e)}")
+    
 # 🔹 Crear usuario
 @router.post("/users")
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
@@ -121,7 +155,8 @@ def read_me(current_user: User = Depends(get_current_user)):
         "nivel_actividad": current_user.nivel_actividad,
         "objetivo": current_user.objetivo,
         "preferencias": current_user.preferencias,
-        "restricciones": current_user.restricciones
+        "restricciones": current_user.restricciones,
+        "avatar_url": current_user.avatar_url
     }
 
 @router.post("/logout")

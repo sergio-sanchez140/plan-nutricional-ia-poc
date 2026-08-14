@@ -21,6 +21,27 @@ class User(Base):
 
     plans = relationship("NutritionPlan", back_populates="user")
 
+    # Añade esto dentro de tu clase User existente:
+    xp = Column(Integer, default=0)
+    nivel = Column(Integer, default=1)
+    racha_dias = Column(Integer, default=0)
+    ultimo_login = Column(String, nullable=True) # Para controlar los días de racha
+    ultimo_registro_fecha = Column(String, nullable=True) # Guardará "YYYY-MM-DD"
+
+    avatar_url = Column(String, nullable=True)
+
+# Añade esta nueva clase al final del archivo:
+class Challenge(Base):
+    __tablename__ = "challenges"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    fecha = Column(String) # YYYY-MM-DD
+    titulo = Column(String)
+    descripcion = Column(String)
+    xp_recompensa = Column(Integer)
+    completado = Column(Boolean, default=False)
+
 
 class NutritionPlan(Base):
     __tablename__ = "nutrition_plans"

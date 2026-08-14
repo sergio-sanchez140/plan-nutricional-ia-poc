@@ -5,6 +5,31 @@ import requests
 import json
 from core.config import settings
 from core.prompts import ANALISIS_INGESTA_PROMPT
+from core.prompts import RETO_GAMIFICACION_PROMPT
+
+def generate_challenges_with_groq(gap_calorias: int, gap_macros: dict) -> list:
+    prompt = f"{RETO_GAMIFICACION_PROMPT}\n\nFaltan por consumir:\nCalorías: {gap_calorias} kcal\nMacros: {gap_macros}"
+    
+    headers = {
+        "Authorization": f"Bearer {settings.GROQ_API_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "model": settings.GROQ_MODEL,
+        "messages": [
+            {"role": "system", "content": "Eres un motor de gamificación que responde en JSON."},
+            {"role": "user", "content": prompt}
+        ],
+        "temperature": 0.7, 
+        "response_format": {"type": "json_object"}
+    }
+    
+    response = requests.post(settings.GROQ_API_URL, headers=headers, json=payload)
+    response.raise_for_status()
+    
+    contenido = response.json()["choices"][0]["message"]["content"]
+    return json.loads(contenido).get("retos", [])
 
 def analyze_intake_with_groq(texto_ingesta: str) -> dict:
     """Envía el texto libre del usuario a la IA para estimar calorías y macros."""

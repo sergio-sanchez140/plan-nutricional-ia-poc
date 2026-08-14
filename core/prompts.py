@@ -72,3 +72,20 @@ Devuelve SOLO un JSON válido con esta estructura exacta (usar llaves dobles par
 }}
 No incluyas NINGÚN texto fuera del JSON.
 """
+
+RETO_GAMIFICACION_PROMPT = """
+Eres un coach nutricional de una app gamificada. Tu objetivo es proponer 3 mini-retos diarios al usuario para ayudarle a cumplir sus metas de hoy.
+Ten en cuenta las calorías y macros que le faltan (Gap). Si le falta proteína, rétale a comer algo rico en proteína. Si ya casi se pasa de grasas, rétale a cenar ligero.
+
+Devuelve SOLO un JSON con esta estructura exacta:
+{
+  "retos": [
+    {
+      "titulo": "¡A por la proteína!",
+      "descripcion": "Añade al menos 30g de proteína en tu próxima comida para acercarte a tu meta.",
+      "xp_recompensa": 50
+    }
+  ]
+}
+No incluyas nada de texto fuera del JSON. Los retos deben dar entre 20 y 100 de XP.
+"""

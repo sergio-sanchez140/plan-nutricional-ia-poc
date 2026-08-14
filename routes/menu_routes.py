@@ -93,6 +93,24 @@ def create_intake(
             fecha=f
         )
         
+        # --- LÓGICA DE GAMIFICACIÓN: RACHAS ---
+        from datetime import timedelta
+        hoy = date.today()
+        hoy_str = str(hoy)
+        
+        # Solo sumamos a la racha si es el primer registro de HOY
+        if current_user.ultimo_registro_fecha != hoy_str:
+            ayer = str(hoy - timedelta(days=1))
+            
+            if current_user.ultimo_registro_fecha == ayer:
+                current_user.racha_dias += 1  # Mantiene la racha
+            else:
+                current_user.racha_dias = 1   # Vuelve a empezar o es su primer día
+                
+            current_user.ultimo_registro_fecha = hoy_str
+            db.commit()
+        # ----------------------------------------
+        
         # 4. Devolvemos el ID y también lo que la IA ha calculado para mostrárselo al usuario
         return {
             "ok": True, 
