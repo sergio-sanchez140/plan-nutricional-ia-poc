@@ -25,7 +25,7 @@ from services.groq_client import analyze_intake_with_groq
 
 router = APIRouter()
 
-@router.post("/ai/vision/analyze")
+@router.post("/vision/analyze")
 async def analyze_food_image(
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user)
@@ -33,23 +33,37 @@ async def analyze_food_image(
     """
     Analiza la foto de un plato de comida utilizando IA de Visión (Groq).
     """
-    # 1. Validar el tipo de archivo enviado
-    if not file.content_type.startswith("image/"):
+    
+    # 1. Validación mejorada (Content-Type o Extensión)
+    content_type = file.content_type
+    filename = file.filename.lower()
+    
+    is_image_mime = content_type.startswith("image/")
+    is_image_ext = filename.endswith(('.jpg', '.jpeg', '.png', '.webp', '.jfif'))
+    
+    if not is_image_mime and not is_image_ext:
+        # LOG PARA TI (Saldrá en la consola de Uvicorn)
+        print(f"[DEBUG BACKEND] Archivo rechazado. MIME: {content_type} | Archivo: {filename}")
+        
+        # ERROR PARA EL FRONTEND
         raise HTTPException(
             status_code=400, 
-            detail="El archivo enviado no es una imagen válida."
+            detail=f"El archivo '{filename}' no parece una imagen válida. Tipo recibido: {content_type}"
         )
 
     try:
         # 2. Leer los bytes de la imagen
         file_bytes = await file.read()
         
-        # 3. Analizar la imagen con Groq Vision
-        resultado = analyze_image_with_groq(file_bytes, file.content_type)
+        # 3. Analizar la imagen con Groq Vision (Le pasamos un MIME seguro)
+        safe_mime_type = content_type if is_image_mime else "image/jpeg"
+        resultado = analyze_image_with_groq(file_bytes, safe_mime_type)
         
         return resultado
 
     except Exception as e:
+        # Aquí también metemos un print para depurar nosotros si falla Groq
+        print(f"[ERROR GROQ VISION] Excepción capturada: {str(e)}")
         raise HTTPException(
             status_code=500, 
             detail=f"Error analizando la imagen con la IA: {str(e)}"

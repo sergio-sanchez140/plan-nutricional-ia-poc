@@ -1,5 +1,4 @@
 # services/groq_client.py
-# services/groq_client.py
 import re
 import requests
 import json
@@ -30,7 +29,7 @@ def analyze_image_with_groq(file_bytes: bytes, mime_type: str) -> dict:
     )
 
     payload = {
-        "model": "llama-3.2-11b-vision-preview",
+        "model": settings.GROQ_VISION_MODEL,
         "messages": [
             {
                 "role": "user",
