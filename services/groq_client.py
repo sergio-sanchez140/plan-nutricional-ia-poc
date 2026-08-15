@@ -6,6 +6,52 @@ import json
 from core.config import settings
 from core.prompts import ANALISIS_INGESTA_PROMPT
 from core.prompts import RETO_GAMIFICACION_PROMPT
+import base64
+
+def analyze_image_with_groq(file_bytes: bytes, mime_type: str) -> dict:
+    """Procesa los bytes de una imagen en Base64 y consulta al modelo de visión de Groq."""
+    
+    # 1. Convertir la imagen a Base64
+    base64_image = base64.b64encode(file_bytes).decode('utf-8')
+    data_url = f"data:{mime_type};base64,{base64_image}"
+
+    # 2. Construir la petición HTTP con el modelo de visión
+    headers = {
+        "Authorization": f"Bearer {settings.GROQ_API_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    prompt_texto = (
+        "Eres un nutricionista experto. Analiza la siguiente imagen de un plato de comida. "
+        "Identifica los ingredientes principales, estima la ración media (en gramos) y calcula los valores nutricionales aproximados. "
+        "Debes responder ÚNICA Y EXCLUSIVAMENTE con un JSON válido, sin Markdown extra ni texto antes o después. "
+        "Estructura exacta:\n"
+        '{"nombre_plato": "string", "calorias": 0, "macros": {"proteinas": 0, "carbohidratos": 0, "grasas": 0}, "ingredientes": ["string"]}'
+    )
+
+    payload = {
+        "model": "llama-3.2-11b-vision-preview",
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": prompt_texto},
+                    {"type": "image_url", "image_url": {"url": data_url}}
+                ]
+            }
+        ],
+        "temperature": 0.2,
+        "response_format": {"type": "json_object"}
+    }
+
+    response = requests.post(settings.GROQ_API_URL, headers=headers, json=payload)
+    
+    if response.status_code != 200:
+        print(f"[ERROR GROQ VISION] {response.status_code} - {response.text}")
+        response.raise_for_status()
+
+    contenido = response.json()["choices"][0]["message"]["content"]
+    return json.loads(contenido)
 
 def generate_challenges_with_groq(gap_calorias: int, gap_macros: dict) -> list:
     prompt = f"{RETO_GAMIFICACION_PROMPT}\n\nFaltan por consumir:\nCalorías: {gap_calorias} kcal\nMacros: {gap_macros}"

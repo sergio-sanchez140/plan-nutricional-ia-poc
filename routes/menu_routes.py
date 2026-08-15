@@ -2,8 +2,7 @@ from datetime import date
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any, Optional
-from fastapi import Body, Query
-
+from fastapi import Body, Query, File, UploadFile
 from models.db_models import NutritionPlan, User, Meal
 from models.plan_schemas import MenuTipoRequest, NutritionPlanRead, MealRead
 from db.database import get_db
@@ -19,12 +18,42 @@ from services.nutrition import (
     generate_adjusted_menu,
     save_plan_adjustment
 )
-from services.groq_client import generate_meal_with_groq, generate_menu_with_groq
+from services.groq_client import generate_meal_with_groq, generate_menu_with_groq, analyze_image_with_groq
 from core.prompts import MENU_DIARIO_PROMPT, MENU_SEMANAL_PROMPT, MENU_MENSUAL_PROMPT
 from utils.validation_utils import validar_datos_usuario
 from services.groq_client import analyze_intake_with_groq
 
 router = APIRouter()
+
+@router.post("/ai/vision/analyze")
+async def analyze_food_image(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Analiza la foto de un plato de comida utilizando IA de Visión (Groq).
+    """
+    # 1. Validar el tipo de archivo enviado
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(
+            status_code=400, 
+            detail="El archivo enviado no es una imagen válida."
+        )
+
+    try:
+        # 2. Leer los bytes de la imagen
+        file_bytes = await file.read()
+        
+        # 3. Analizar la imagen con Groq Vision
+        resultado = analyze_image_with_groq(file_bytes, file.content_type)
+        
+        return resultado
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Error analizando la imagen con la IA: {str(e)}"
+        )
 
 @router.get("/intakes/today")
 def get_today_intake(
@@ -92,7 +121,7 @@ def create_intake(
             macros=analisis["macros"],
             fecha=f
         )
-        
+
         # --- LÓGICA DE GAMIFICACIÓN: RACHAS ---
         from datetime import timedelta
         hoy = date.today()
