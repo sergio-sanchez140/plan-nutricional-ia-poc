@@ -89,6 +89,8 @@ class Meal(Base):
 
     plan = relationship("NutritionPlan", back_populates="meals")
 
+    imagen_url = Column(String, nullable=True)
+
 
 class TokenBlacklist(Base):
     __tablename__ = "token_blacklist"

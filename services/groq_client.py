@@ -123,7 +123,7 @@ def generate_meal_with_groq(meal_info, preferencias, restricciones):
     prompt = f"""
     Eres un nutricionista experto. Genera una comida alternativa con macros cercanos a la original.
     Preferencias: {pref_txt}. Restricciones: {restr_txt}.
-    Devuelve SOLO JSON con formato: {{"nombre": "str", "ingredientes": [{{"nombre": "str", "cantidad_g": int}}], "macros": {{"carbohidratos_g": int, "proteinas_g": int, "grasas_g": int}}, "calorias": int}}
+    Devuelve SOLO JSON con formato: {{"nombre": "str", "ingredientes": [{{"nombre": "str", "cantidad_g": int}}], "macros": {{"carbohidratos_g": int, "proteinas_g": int, "grasas_g": int}}, "calorias": int, "image_search_term": "str (2-3 keywords en inglés, ej: 'grilled salmon')"}}
     Comida original: {json.dumps(meal_info, ensure_ascii=False)}
     """
 
@@ -143,6 +143,10 @@ def generate_meal_with_groq(meal_info, preferencias, restricciones):
     for key in ["nombre", "ingredientes", "macros", "calorias"]:
         if key not in meal_dict:
             meal_dict[key] = meal_info.get(key, [] if key == "ingredientes" else 0)
+            
+    # Validación extra para la imagen
+    if "image_search_term" not in meal_dict:
+        meal_dict["image_search_term"] = "healthy meal"
 
     meal_dict["completed"] = False
     return meal_dict

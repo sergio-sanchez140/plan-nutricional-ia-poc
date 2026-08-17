@@ -13,7 +13,8 @@ Estructura exacta que debes seguir:
     "nombre": "Avena con frutas",
     "ingredientes": [{{"nombre": "Avena", "cantidad_g": 50}}],
     "macros": {{"carbohidratos_g": 30, "proteinas_g": 10, "grasas_g": 5}},
-    "calorias": 200
+    "calorias": 200,
+    "image_search_term": "string (2 o 3 palabras clave EN INGLÉS para buscar en un banco de imágenes, ej: 'scrambled eggs toast')"
   }}
 ]
 No agregues texto fuera del JSON.

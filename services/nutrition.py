@@ -46,7 +46,8 @@ def serialize_meal(meal: Meal) -> dict:
         "nombre": meal.nombre,
         "macros": meal.macros,
         "calorias": meal.calorias,
-        "completed": meal.completed
+        "completed": meal.completed,
+        "imagen_url": meal.imagen_url
     }
 
 

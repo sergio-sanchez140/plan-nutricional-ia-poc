@@ -12,6 +12,7 @@ class MealRead(BaseModel):
     macros: Dict[str, float]
     calorias: float
     completed: bool
+    imagen_url: Optional[str] = None
 
     model_config = {
         "from_attributes": True

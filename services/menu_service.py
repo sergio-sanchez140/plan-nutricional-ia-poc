@@ -3,6 +3,7 @@ from typing import List, Dict, Optional
 from datetime import date
 from models.db_models import NutritionPlan, User, Meal
 from core.prompts import MENU_DIARIO_PROMPT, MENU_SEMANAL_PROMPT, MENU_MENSUAL_PROMPT
+from services.pexels_client import get_food_image_url
 from services.nutrition import (
     calcular_macros,
     get_meal_by_plan_and_id,
@@ -56,6 +57,11 @@ def generar_y_guardar_plan_ia(db: Session, current_user: User, tipo: str):
     # 6. Guardar comidas en DB
     saved_meals = []
     for comida in comidas_generadas:
+        
+        # 🔥 AQUÍ LLAMAMOS A PEXELS:
+        search_term = comida.get("image_search_term", "healthy food meal")
+        foto_url = get_food_image_url(search_term)
+
         meal = Meal(
             plan_id=new_plan.id,
             dia=comida.get("dia", 1),
@@ -64,6 +70,7 @@ def generar_y_guardar_plan_ia(db: Session, current_user: User, tipo: str):
             alimentos=comida.get("ingredientes", []),
             macros=comida.get("macros", {"carbohidratos_g":0,"proteinas_g":0,"grasas_g":0}),
             calorias=comida.get("calorias", 0),
+            imagen_url=foto_url, # ✅ ASIGNAMOS LA URL DE LA FOTO
             completed=False
         )
         db.add(meal)
@@ -151,10 +158,15 @@ def regenerar_comida_ia(db: Session, current_user: User, plan_id: int, meal_id: 
         current_user.restricciones or []
     )
 
+    search_term = nueva_comida.get("image_search_term", "healthy food meal")
+    foto_url = get_food_image_url(search_term)
+
     meal.nombre = nueva_comida["nombre"]
     meal.alimentos = nueva_comida.get("ingredientes", [])
     meal.macros = nueva_comida["macros"]
     meal.calorias = nueva_comida["calorias"]
+    meal.imagen_url = foto_url  # ✅ ACTUALIZAMOS LA FOTO EN LA BD
+    
     db.commit()
     db.refresh(meal)
     return serialize_meal(meal)

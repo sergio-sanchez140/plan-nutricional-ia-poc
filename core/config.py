@@ -31,4 +31,7 @@ class Settings:
     CLOUDINARY_API_KEY: str = os.getenv("CLOUDINARY_API_KEY", "")
     CLOUDINARY_API_SECRET: str = os.getenv("CLOUDINARY_API_SECRET", "")
 
+    # API de Imágenes (Pexels)
+    PEXELS_API_KEY: str = os.getenv("PEXELS_API_KEY", "")
+
 settings = Settings()
