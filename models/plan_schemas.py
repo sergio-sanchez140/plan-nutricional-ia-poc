@@ -1,5 +1,5 @@
 import datetime
-from typing import Dict, Any, List, Literal
+from typing import Dict, Any, List, Literal, Optional
 from pydantic import BaseModel
 
 # 🔹 Schema para cada comida
@@ -49,3 +49,13 @@ class ReplaceMealRequest(BaseModel):
     macros: Dict[str, int]
     calorias: int
     original_foods: List[str] = []
+
+class IntakeSchema(BaseModel):
+    texto: Optional[str] = None # Para el registro manual/voz por texto
+    nombre_plato: Optional[str] = None # Para cuando viene de la Visión IA
+    calorias: Optional[int] = 0
+    macros: Optional[dict] = None
+    ingredientes: Optional[List[str]] = []
+
+class ChallengeCompleteRequest(BaseModel):
+    id: int

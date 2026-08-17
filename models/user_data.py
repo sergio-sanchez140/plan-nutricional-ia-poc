@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr, Field, field_validator
 from .enums import ActivityLevel, Goal, Gender
+from typing import Optional
 
 class UserCreate(BaseModel):
     nombre: str = Field(
@@ -69,3 +70,7 @@ class UserUpdate(BaseModel):
 class UserLogin(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=8, max_length=128)
+
+class GoogleToken(BaseModel):
+    id_token: Optional[str] = None
+    access_token: Optional[str] = None
