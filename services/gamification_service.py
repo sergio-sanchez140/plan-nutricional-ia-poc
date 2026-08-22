@@ -47,7 +47,9 @@ def obtener_o_generar_retos_hoy(db: Session, current_user: User) -> List[Challen
     else:
         consumed_cal, consumed_macros = get_total_intake_for_date(db, current_user, date.today())
         gap_dict = calculate_gap_for_day(plan, consumed_cal, consumed_macros)
-        gap_cal, gap_mac = gap_dict["calorias"], gap_dict["macros"]
+
+        gap_cal = gap_dict.get("calorias", gap_dict.get("gap_calorias", 0))
+        gap_mac = gap_dict.get("macros", gap_dict.get("gap_macros", {"carbohidratos_g": 0, "proteinas_g": 0, "grasas_g": 0}))
 
     # 3. Pedir a Groq los retos basados en el GAP
     retos_ia = generate_challenges_with_groq(gap_cal, gap_mac)

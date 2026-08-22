@@ -1,22 +1,34 @@
 # app/core/prompts.py
 
-# app/core/prompts.py
-
-# 🔹 Formato estricto para la IA (Lista plana con llaves dobles para escapar el .format)
+# 🔹 Formato estricto para la IA (Objeto con lista para soportar json_mode)
 JSON_SCHEMA_INFO = """
-Devuelve SOLO un JSON válido. El JSON debe ser UNA LISTA PLANA de objetos.
-Estructura exacta que debes seguir:
-[
-  {{
-    "dia": 1, 
-    "turno": "desayuno", 
-    "nombre": "Avena con frutas",
-    "ingredientes": [{{"nombre": "Avena", "cantidad_g": 50}}],
-    "macros": {{"carbohidratos_g": 30, "proteinas_g": 10, "grasas_g": 5}},
-    "calorias": 200,
-    "image_search_term": "string (2 o 3 palabras clave EN INGLÉS para buscar en un banco de imágenes, ej: 'scrambled eggs toast')"
-  }}
-]
+Devuelve SOLO un JSON válido. DEBES devolver un OBJETO que contenga una lista llamada "comidas" con TODOS los turnos (desayuno, comida, cena, y snacks si proceden) para alcanzar las calorías objetivo.
+
+Estructura exacta que debes seguir (esto es solo un ejemplo de la estructura, DEBES generar tus propios platos y TODOS los turnos):
+{{
+  "comidas": [
+    {{
+      "dia": 1, 
+      "turno": "desayuno", 
+      "nombre": "Avena con frutas",
+      "image_search_term": "oatmeal with fruits",
+      "ingredientes": [{{"nombre": "Avena", "cantidad_g": 50}}],
+      "macros": {{"carbohidratos_g": 30, "proteinas_g": 10, "grasas_g": 5}},
+      "calorias": 200
+    }},
+    {{
+      "dia": 1, 
+      "turno": "comida", 
+      "nombre": "Pollo a la plancha con arroz",
+      "image_search_term": "grilled chicken with rice",
+      "ingredientes": [{{"nombre": "Pollo", "cantidad_g": 150}}, {{"nombre": "Arroz", "cantidad_g": 80}}],
+      "macros": {{"carbohidratos_g": 60, "proteinas_g": 40, "grasas_g": 10}},
+      "calorias": 500
+    }}
+  ]
+}}
+IMPORTANTE: No devuelvas solo el ejemplo. Debes generar el menú completo distribuyendo correctamente las calorías.
+El campo 'image_search_term' DEBE ser corto (máximo 3-4 palabras) y OBLIGATORIAMENTE EN INGLÉS para que la API de fotos funcione correctamente.
 No agregues texto fuera del JSON.
 """
 
@@ -78,15 +90,15 @@ RETO_GAMIFICACION_PROMPT = """
 Eres un coach nutricional de una app gamificada. Tu objetivo es proponer 3 mini-retos diarios al usuario para ayudarle a cumplir sus metas de hoy.
 Ten en cuenta las calorías y macros que le faltan (Gap). Si le falta proteína, rétale a comer algo rico en proteína. Si ya casi se pasa de grasas, rétale a cenar ligero.
 
-Devuelve SOLO un JSON con esta estructura exacta:
-{
+Devuelve SOLO un JSON con esta estructura exacta (usar llaves dobles para el esquema):
+{{
   "retos": [
-    {
+    {{
       "titulo": "¡A por la proteína!",
       "descripcion": "Añade al menos 30g de proteína en tu próxima comida para acercarte a tu meta.",
       "xp_recompensa": 50
-    }
+    }}
   ]
-}
+}}
 No incluyas nada de texto fuera del JSON. Los retos deben dar entre 20 y 100 de XP.
 """
