@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 
 # Carga las variables del archivo .env
-load_dotenv()
+load_dotenv(override=True)
 
 class Settings:
     PROJECT_NAME: str = "Plan Nutricional IA POC"
@@ -19,6 +19,10 @@ class Settings:
     GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
     GROQ_MODEL: str = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
     GROQ_API_URL: str = "https://api.groq.com/openai/v1/chat/completions"
+
+    # 🚀 GOOGLE GEMINI API (NUEVO)
+    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
+    GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
     
     # ✅ AQUÍ ESTÁ EL NUEVO MODELO DE VISIÓN:
     GROQ_VISION_MODEL: str = os.getenv("GROQ_VISION_MODEL", "llama-3.2-90b-vision-preview")
