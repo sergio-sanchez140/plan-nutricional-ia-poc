@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import date
+from models.plan_schemas import TextAnalyzeRequest
+from services.intake_service import analizar_ingesta_texto
 
 # Base de datos y Auth
 from db.database import get_db
@@ -92,3 +94,21 @@ def adjust_plan_for_date(plan_id: int, fecha: Optional[str] = Query(None), db: S
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+from models.plan_schemas import TextAnalyzeRequest
+from services.groq_client import analyze_intake_with_groq
+
+@router.post("/text/analyze")
+def endpoint_analyze_text(
+    request: TextAnalyzeRequest
+    # current_user: User = Depends(get_current_user) # Añádelo si quieres que esté protegido por token
+):
+    if not request.texto.strip():
+        raise HTTPException(status_code=400, detail="El texto de la ingesta no puede estar vacío")
+        
+    try:
+        # Llamamos directamente a TU función existente, que devuelve el JSON puro
+        resultado = analyze_intake_with_groq(request.texto)
+        return resultado
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error analizando el texto: {str(e)}")

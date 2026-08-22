@@ -97,17 +97,60 @@ def generate_challenges_with_groq(gap_calorias: int, gap_macros: dict) -> list:
 
 
 def analyze_intake_with_groq(texto_ingesta: str) -> dict:
-    prompt = f"{ANALISIS_INGESTA_PROMPT}\n\nIngesta del usuario: '{texto_ingesta}'"
+    prompt = f"""
+    {ANALISIS_INGESTA_PROMPT}
+    
+    Ingesta del usuario: '{texto_ingesta}'
+    
+    Devuelve SOLO un JSON válido con esta estructura EXACTA:
+    {{
+        "nombre_plato": "Nombre resumido del plato o alimento",
+        "calorias": 0,
+        "macros": {{
+            "proteinas": 0,
+            "carbohidratos": 0,
+            "grasas": 0
+        }},
+        "ingredientes": ["ingrediente 1", "ingrediente 2"]
+    }}
+    """
     try:
         response = client.models.generate_content(
             model=settings.GEMINI_MODEL,
             contents=prompt,
             config=json_config
         )
-        return _extract_json(response.text)
+        raw_data = _extract_json(response.text)
+        
+        macros_raw = raw_data.get("macros", {}) or {}
+        ingredientes_raw = raw_data.get("ingredientes") or raw_data.get("alimentos") or []
+        
+        ingredientes_limpios = []
+        for ing in ingredientes_raw:
+            if isinstance(ing, dict):
+                ingredientes_limpios.append(ing.get("nombre", "Ingrediente"))
+            else:
+                ingredientes_limpios.append(str(ing))
+
+        return {
+            "nombre_plato": raw_data.get("nombre_plato") or raw_data.get("texto") or texto_ingesta,
+            "calorias": raw_data.get("calorias", 0),
+            "macros": {
+                "proteinas": macros_raw.get("proteinas") or macros_raw.get("proteinas_g", 0),
+                "carbohidratos": macros_raw.get("carbohidratos") or macros_raw.get("carbohidratos_g", 0),
+                "grasas": macros_raw.get("grasas") or macros_raw.get("grasas_g", 0)
+            },
+            "ingredientes": ingredientes_limpios
+        }
+
     except Exception as e:
         print(f"[ERROR GEMINI INTAKE] {e}")
-        return {"calorias": 0, "macros": {"carbohidratos_g": 0, "proteinas_g": 0, "grasas_g": 0}, "alimentos": []}
+        return {
+            "nombre_plato": texto_ingesta, 
+            "calorias": 0, 
+            "macros": {"proteinas": 0, "carbohidratos": 0, "grasas": 0}, 
+            "ingredientes": []
+        }
 
 
 def generate_menu_with_groq(calories, macros, preferencias, restricciones, prompt_template):

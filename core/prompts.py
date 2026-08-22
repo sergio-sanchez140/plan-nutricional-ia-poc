@@ -102,3 +102,58 @@ Devuelve SOLO un JSON con esta estructura exacta (usar llaves dobles para el esq
 }}
 No incluyas nada de texto fuera del JSON. Los retos deben dar entre 20 y 100 de XP.
 """
+
+# 🔹 Prompt para recálculo dinámico parcial
+RECALCULO_PARCIAL_PROMPT = """
+Eres un nutricionista experto. El usuario se ha desviado de su plan y necesitas recalcular SOLO sus próximas comidas del día para que logre cumplir sus metas nutricionales.
+
+PRESUPUESTO RESTANTE para el resto del día:
+- Calorías: {calories} kcal
+- Carbohidratos: {carbs}g
+- Proteínas: {proteins}g
+- Grasas: {fats}g
+
+TURNOS QUE DEBES GENERAR: {turnos_futuros}
+Preferencias: {preferencias}
+Restricciones: {restricciones}
+
+REGLAS ESTRICTAS:
+1. Genera comidas SOLO para los turnos indicados en la lista. Si la lista es ["cena"], solo genera la cena.
+2. Distribuye el presupuesto restante equitativamente entre los turnos solicitados.
+3. Si el presupuesto restante es muy bajo (ej. menos de 200 kcal), genera opciones extremadamente ligeras (infusiones, gelatinas, un yogur desnatado).
+
+Devuelve SOLO un JSON válido con esta estructura exacta (usar llaves dobles para el esquema):
+{{
+  "comidas": [
+    {{
+      "dia": 1, 
+      "turno": "cena", 
+      "nombre": "Ensalada ligera de atún",
+      "image_search_term": "light tuna salad",
+      "ingredientes": [{{"nombre": "Lechuga", "cantidad_g": 100}}, {{"nombre": "Atún natural", "cantidad_g": 50}}],
+      "macros": {{"carbohidratos_g": 5, "proteinas_g": 12, "grasas_g": 2}},
+      "calorias": 86
+    }}
+  ]
+}}
+No incluyas NADA de texto fuera del JSON.
+"""
+
+ANALISIS_TEXTO_PROMPT = """
+Eres un nutricionista experto. El usuario ha escrito lo que ha comido en texto libre.
+Tu objetivo es estimar los ingredientes, calorías y macronutrientes aproximados de esa comida basándote en cantidades estándar.
+
+Texto del usuario: "{texto}"
+
+Devuelve SOLO un JSON válido con la siguiente estructura (no incluyas markdown, solo el JSON):
+{{
+    "nombre_plato": "Nombre del plato resumido (ej: Pizza Barbacoa)",
+    "calorias": 650,
+    "macros": {{
+        "carbohidratos_g": 60,
+        "proteinas_g": 25,
+        "grasas_g": 30
+    }},
+    "ingredientes": ["Masa de pizza", "Salsa barbacoa", "Queso", "Carne"]
+}}
+"""
