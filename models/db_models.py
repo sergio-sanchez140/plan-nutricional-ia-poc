@@ -130,3 +130,24 @@ class PlanAdjustment(Base):
         "NutritionPlan",
         back_populates="adjustments"
     )
+
+class DailyHistory(Base):
+    """
+    Daily Ledger (Snapshot): Guarda el historial inmutable de un día cerrado.
+    """
+    __tablename__ = "daily_histories"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    fecha = Column(Date, nullable=False, index=True)
+    
+    # Datos pre-calculados
+    meta_calorias = Column(Integer, default=0)
+    calorias_consumidas = Column(Integer, default=0)
+    macros_consumidos = Column(JSON, default={"carbohidratos_g": 0, "proteinas_g": 0, "grasas_g": 0})
+    status = Column(String, default="empty") # "perfect", "good", "missed", "empty"
+    
+    # Snapshot JSON de las comidas de ese día (mezcla de plan completado + extras)
+    comidas = Column(JSON, default=[]) 
+
+    user = relationship("User", backref="daily_histories")

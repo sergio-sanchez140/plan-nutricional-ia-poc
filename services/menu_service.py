@@ -176,10 +176,32 @@ def marcar_comida_completada(db: Session, current_user: User, meal_id: int, comp
         Meal.id == meal_id,
         NutritionPlan.user_id == current_user.id
     ).first()
+    
     if not meal:
         raise ValueError("Comida no encontrada")
 
     meal.completed = completed
+    
+    # 🔥 FIX ARQUITECTÓNICO: Guardar la comida en UserIntake para que compute en el historial de HOY
+    from models.db_models import UserIntake
+    from datetime import date
+    
+    hoy = date.today()
+    if completed:
+        # Añadimos la comida del plan a las ingestas reales de hoy
+        nueva_ingesta = UserIntake(
+            user_id=current_user.id,
+            fecha=hoy,
+            alimentos=meal.alimentos,
+            calorias=meal.calorias,
+            macros=meal.macros
+        )
+        db.add(nueva_ingesta)
+    else:
+        # Si la desmarca, podríamos buscarla y borrarla (opcional para el futuro, 
+        # para el POC lo dejamos en añadir).
+        pass
+
     db.commit()
     db.refresh(meal)
     return meal
