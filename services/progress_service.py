@@ -1,6 +1,6 @@
 from datetime import date, timedelta
 from sqlalchemy.orm import Session
-from models.db_models import User
+from models.db_models import User, UserIntake
 from services.nutrition import get_total_intake_for_date, get_user_plan_by_type
 
 def obtener_historial_30_dias(db: Session, current_user: User) -> dict:
@@ -50,4 +50,60 @@ def obtener_historial_30_dias(db: Session, current_user: User) -> dict:
         "racha_actual": racha_actual,
         "dias_perfectos": dias_perfectos,
         "historial": historial
+    }
+
+def obtener_detalle_dia(db: Session, current_user: User, fecha_str: str) -> dict:
+    try:
+        fecha_obj = date.fromisoformat(fecha_str)
+    except ValueError:
+        raise ValueError("Formato de fecha inválido. Usa YYYY-MM-DD.")
+
+    # Obtenemos la meta calórica del plan activo
+    plan_actual = get_user_plan_by_type(db, current_user, "diario")
+    meta_calorias = plan_actual.calorias if plan_actual else 2000
+
+    # Buscamos todas las ingestas de ese día
+    ingestas = db.query(UserIntake).filter(
+        UserIntake.user_id == current_user.id,
+        UserIntake.fecha == fecha_obj
+    ).all()
+
+    calorias_totales = 0
+    macros_totales = {"proteinas_g": 0, "carbohidratos_g": 0, "grasas_g": 0}
+    comidas_list = []
+
+    for ingesta in ingestas:
+        cal = ingesta.calorias or 0
+        calorias_totales += cal
+        
+        m = ingesta.macros or {}
+        macros_totales["carbohidratos_g"] += m.get("carbohidratos_g", 0)
+        macros_totales["proteinas_g"] += m.get("proteinas_g", 0)
+        macros_totales["grasas_g"] += m.get("grasas_g", 0)
+
+        # Extraemos el nombre del primer alimento del array
+        nombre_comida = "Ingesta libre"
+        if ingesta.alimentos and isinstance(ingesta.alimentos, list) and len(ingesta.alimentos) > 0:
+            primer_alim = ingesta.alimentos[0]
+            if isinstance(primer_alim, dict):
+                nombre_comida = primer_alim.get("nombre", "Ingesta libre")
+            else:
+                nombre_comida = str(primer_alim)
+
+        comidas_list.append({
+            "turno": "extra",  # En el historial puro no siempre hay turno, devolvemos 'extra'
+            "nombre": nombre_comida,
+            "calorias": cal
+        })
+
+    return {
+        "fecha": fecha_str,
+        "calorias_consumidas": round(calorias_totales),
+        "meta_calorias": round(meta_calorias),
+        "macros": {
+            "proteinas_g": round(macros_totales["proteinas_g"]),
+            "carbohidratos_g": round(macros_totales["carbohidratos_g"]),
+            "grasas_g": round(macros_totales["grasas_g"])
+        },
+        "comidas": comidas_list
     }
