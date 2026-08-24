@@ -24,15 +24,7 @@ json_config = types.GenerateContentConfig(
 def _extract_json(content: str, fallback_data: Any = None) -> Any:
     """Extrae JSON ultra-robusto."""
     if fallback_data is None:
-        fallback_data = [{
-            "dia": 1,
-            "turno": "desayuno",
-            "nombre": "Menú de Rescate (Servidores Ocupados)",
-            "ingredientes": [{"nombre": "Alimentos variados", "cantidad_g": 100}],
-            "macros": {"carbohidratos_g": 0, "proteinas_g": 0, "grasas_g": 0},
-            "calorias": 0,
-            "image_search_term": "healthy meal"
-        }]
+        fallback_data = []
 
     try:
         content_clean = re.sub(r'<think>.*?</think>', '', content, flags=re.DOTALL).strip()
@@ -184,13 +176,8 @@ def generate_menu_with_groq(calories, macros, preferencias, restricciones, promp
         menu_list = []
     
     if not isinstance(menu_list, list) or len(menu_list) == 0:
-        print("[PROD ALERT] El fallback falló, inyectando menú de emergencia duro.")
-        menu_list = [{
-            "dia": 1, "turno": "desayuno", "nombre": "Menú de Emergencia",
-            "ingredientes": [{"nombre": "Alimentos básicos", "cantidad_g": 100}],
-            "macros": {"carbohidratos_g": 0, "proteinas_g": 0, "grasas_g": 0},
-            "calorias": 0, "completed": False
-        }]
+        print("[PROD ALERT] El fallback falló. Devolviendo lista vacía para abortar recálculo de forma segura.")
+        return [] # 🔥 FIX: Devolvemos vacío para que el servicio aborte.
 
     for comida in menu_list:
         comida["completed"] = False

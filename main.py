@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from routes import health_routes, db_routes, menu_routes
 from db.init_db import init_db
 from routes import gamification_routes
+from routes.progress_routes import router as progress_router
 
 app = FastAPI(title="Plan Nutricional IA POC")
 
@@ -33,3 +34,4 @@ app.include_router(db_routes.router, prefix="/db", tags=["Users"])
 app.include_router(health_routes.router, prefix="/health", tags=["Health"])
 app.include_router(menu_routes.router, prefix="/ai", tags=["AI Menus"])  # Menús IA
 app.include_router(gamification_routes.router, tags=["Gamification"])
+app.include_router(progress_router, prefix="/ai", tags=["Progress"]) # 🔥 EL NUEVO AQUÍ

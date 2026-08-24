@@ -130,33 +130,54 @@ def procesar_y_guardar_ingesta(db: Session, current_user: User, data: IntakeSche
             comidas_hoy = db.query(Meal).filter(Meal.plan_id == plan_actual.id, Meal.dia == 1).all()
             turnos_futuros = []
 
-            # 🔥 CORRECCIÓN 2: Lo hacemos compatible tanto si Pydantic devuelve objetos como diccionarios
+            # ==========================================
+            # FASE 2 CON LOGS DE DEPURACIÓN EXTREMA
+            # ==========================================
+            print(f"\n--- [DEBUG INICIO RECÁLCULO] ---")
+            print(f"Hora actual: {hora_actual}")
+            print(f"Resoluciones recibidas del Front: {resoluciones}")
+            
             dict_resoluciones = {}
             for r in resoluciones:
-                turno = getattr(r, "turno", r.get("turno") if isinstance(r, dict) else None)
-                estado = getattr(r, "estado", r.get("estado") if isinstance(r, dict) else None)
-                if turno and estado:
-                    dict_resoluciones[turno] = estado
+                turno_str = r.turno if hasattr(r, 'turno') else r.get("turno")
+                estado_str = r.estado if hasattr(r, 'estado') else r.get("estado")
+                if turno_str and estado_str:
+                    dict_resoluciones[turno_str.lower().strip()] = estado_str.lower().strip()
+            
+            print(f"Diccionario de resoluciones procesado: {dict_resoluciones}")
+            print(f"Plan actual ID: {plan_actual.id}")
 
-            # 2.1 Resolver Fantasmas con precisión láser
+            comidas_hoy = db.query(Meal).filter(Meal.plan_id == plan_actual.id, Meal.dia == 1).all()
+            print(f"Total comidas encontradas en BD para hoy (plan {plan_actual.id}): {len(comidas_hoy)}")
+
+            ids_a_borrar = []
             for meal in comidas_hoy:
-                hora_limite = TURNOS_HORAS.get(meal.turno, 23)
+                hora_limite = TURNOS_HORAS.get(meal.turno.lower().strip(), 23)
                 es_pasado = hora_actual > hora_limite
+                
+                print(f"-> Comida ID: {meal.id} | Turno: '{meal.turno}' | Completed: {meal.completed} | Hora límite: {hora_limite} | Es pasado: {es_pasado}")
 
                 if es_pasado and not meal.completed:
-                    estado_elegido = dict_resoluciones.get(meal.turno)
+                    estado_elegido = dict_resoluciones.get(meal.turno.lower().strip())
+                    print(f"   Estado elegido para '{meal.turno}': {estado_elegido}")
                     
                     if estado_elegido == "completado":
                         meal.completed = True
+                        db.add(meal)
+                        print(f"   -> Marcando ID {meal.id} como COMPLETADO")
                     elif estado_elegido == "saltado":
-                        meal.calorias = 0
-                        meal.macros = {"carbohidratos_g": 0, "proteinas_g": 0, "grasas_g": 0}
-                        meal.completed = True
+                        ids_a_borrar.append(meal.id)
+                        print(f"   -> Añadiendo ID {meal.id} a la lista de BORRADO")
                 
                 elif not es_pasado and not meal.completed:
                     turnos_futuros.append(meal.turno)
             
-            db.commit() # Guardamos los fantasmas resueltos
+            if ids_a_borrar:
+                print(f"Ejecutando DELETE para IDs: {ids_a_borrar}")
+                db.query(Meal).filter(Meal.id.in_(ids_a_borrar)).delete(synchronize_session=False)
+            
+            db.commit()
+            print(f"--- [DEBUG FIN RECÁLCULO] ---\n")
             
             # 2.2 Calcular el nuevo Gap real (Incluye la hamburguesa que acabamos de guardar en Fase 1)
             consumed_cal, consumed_macros = get_total_intake_for_date(db, current_user, date.today())
@@ -176,7 +197,12 @@ def procesar_y_guardar_ingesta(db: Session, current_user: User, data: IntakeSche
                     gap_cal, gap_mac, current_user.preferencias or [], current_user.restricciones or [], prompt
                 )
 
-                # 2.4 Borrar futuro obsoleto y meter el nuevo
+                # 🔥 FIX DEFINITIVO: Validación de seguridad anti-desastres
+                if not nuevas_comidas:
+                    print("[SEGURIDAD BACKEND] La IA falló en el recálculo. Abortando borrado del plan futuro.")
+                    return {"ok": True, "message": "Ingesta registrada correctamente. (El menú futuro se ha mantenido debido a alta demanda)"}
+
+                # 2.4 Borrar futuro obsoleto y meter el nuevo SOLO SI LA IA RESPONDIÓ BIEN
                 db.query(Meal).filter(Meal.plan_id == plan_actual.id, Meal.turno.in_(turnos_futuros), Meal.completed == False).delete(synchronize_session=False)
                 
                 for comida in nuevas_comidas:
@@ -191,12 +217,6 @@ def procesar_y_guardar_ingesta(db: Session, current_user: User, data: IntakeSche
                 db.commit()
                 
                 return {"ok": True, "message": "Ingesta registrada y plan restante ajustado inteligentemente"}
-            
-            elif turnos_futuros and gap_cal <= 50:
-                # Se pasó de calorías, le borramos el resto del día para no tentarle.
-                db.query(Meal).filter(Meal.plan_id == plan_actual.id, Meal.turno.in_(turnos_futuros)).delete(synchronize_session=False)
-                db.commit()
-                return {"ok": True, "message": "Ingesta registrada. Has alcanzado tu límite diario, menú restante cancelado."}
 
         except Exception as e:
             # Fallback defensivo: Si la IA falla por red o token limits, la ingesta original ya está a salvo.
