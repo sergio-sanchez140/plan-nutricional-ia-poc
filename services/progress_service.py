@@ -1,6 +1,7 @@
 from datetime import date, timedelta
 from sqlalchemy.orm import Session
-from models.db_models import User, UserIntake, DailyHistory
+from models.db_models import User, UserIntake, DailyHistory, WeightHistory
+from typing import Optional
 from services.nutrition import get_total_intake_for_date, get_user_plan_by_type
 
 def _sincronizar_dias_pasados(db: Session, current_user: User, hoy: date):
@@ -147,14 +148,17 @@ def obtener_detalle_dia(db: Session, current_user: User, fecha_str: str) -> dict
             return {
                 "fecha": fecha_str,
                 "calorias_consumidas": historial.calorias_consumidas,
-                "meta_calorias": historial.meta_calorias,
+                "calorias_objetivo_del_dia": historial.meta_calorias,  # 🌟 Modificado aquí
                 "macros": historial.macros_consumidos,
                 "comidas": historial.comidas
             }
         # Si no hay historial, devolvemos un día vacío
         return {
-            "fecha": fecha_str, "calorias_consumidas": 0, "meta_calorias": 2000,
-            "macros": {"proteinas_g": 0, "carbohidratos_g": 0, "grasas_g": 0}, "comidas": []
+            "fecha": fecha_str, 
+            "calorias_consumidas": 0, 
+            "calorias_objetivo_del_dia": 2000,  # 🌟 Modificado aquí
+            "macros": {"proteinas_g": 0, "carbohidratos_g": 0, "grasas_g": 0}, 
+            "comidas": []
         }
 
     # Si es HOY, lo calculamos al vuelo igual que antes
@@ -182,7 +186,58 @@ def obtener_detalle_dia(db: Session, current_user: User, fecha_str: str) -> dict
     return {
         "fecha": fecha_str,
         "calorias_consumidas": round(calorias_totales),
-        "meta_calorias": round(meta_calorias),
+        "calorias_objetivo_del_dia": round(meta_calorias),  # 🌟 Modificado aquí
         "macros": {k: round(v) for k, v in macros_totales.items()},
         "comidas": comidas_list
+    }
+
+def registrar_peso_usuario(db: Session, current_user: User, nuevo_peso: float, fecha_target: Optional[date] = None) -> dict:
+    fecha_reg = fecha_target or date.today()
+    
+    current_user.peso = nuevo_peso
+    
+    registro = db.query(WeightHistory).filter(
+        WeightHistory.user_id == current_user.id,
+        WeightHistory.fecha == fecha_reg
+    ).first()
+
+    if registro:
+        registro.peso = nuevo_peso
+    else:
+        registro = WeightHistory(
+            user_id=current_user.id,
+            fecha=fecha_reg,
+            peso=nuevo_peso
+        )
+        db.add(registro)
+
+    db.commit()
+    return {"ok": True, "mensaje": "Peso registrado correctamente", "peso": nuevo_peso}
+
+def obtener_historial_peso(db: Session, current_user: User, dias: int = 90) -> dict:
+    fecha_limite = date.today() - timedelta(days=dias)
+    
+    registros = db.query(WeightHistory).filter(
+        WeightHistory.user_id == current_user.id,
+        WeightHistory.fecha >= fecha_limite
+    ).order_by(WeightHistory.fecha.asc()).all()
+
+    if not registros:
+        peso_base = current_user.peso or 0.0
+        return {
+            "peso_actual": peso_base,
+            "peso_inicial": peso_base,
+            "diferencia_total_kg": 0.0,
+            "historial": [{"fecha": str(date.today()), "peso": peso_base}] if peso_base > 0 else []
+        }
+
+    historial_list = [{"fecha": str(r.fecha), "peso": r.peso} for r in registros]
+    peso_inicial = registros[0].peso
+    peso_actual = registros[-1].peso
+
+    return {
+        "peso_actual": peso_actual,
+        "peso_inicial": peso_inicial,
+        "diferencia_total_kg": round(peso_actual - peso_inicial, 2),
+        "historial": historial_list
     }

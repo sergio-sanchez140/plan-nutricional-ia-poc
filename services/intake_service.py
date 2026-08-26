@@ -17,11 +17,16 @@ def obtener_ingestas_hoy(db: Session, current_user: User) -> dict:
     hora_actual = datetime.now().hour
     TURNOS_HORAS = {"desayuno": 11, "almuerzo": 13, "comida": 16, "merienda": 19, "cena": 23}
     
+    # 1. Obtenemos lo consumido (que ahora YA INCLUYE las comidas del plan completadas)
     consumed_cal, consumed_macros = get_total_intake_for_date(db, current_user, hoy)
     
     plan_actual = get_user_plan_by_type(db, current_user, "diario")
+    
+    # 🌟 NUEVO: Extraemos la meta de calorías para el Front-end
+    meta_calorias = plan_actual.calorias if plan_actual else 2000
+    
     comidas_completadas = []
-    turnos_pendientes = [] # 🔥 Nueva lista para el Front-end
+    turnos_pendientes = [] 
     
     if plan_actual:
         todas_las_comidas = db.query(Meal).filter(Meal.plan_id == plan_actual.id, Meal.dia == 1).all()
@@ -39,21 +44,16 @@ def obtener_ingestas_hoy(db: Session, current_user: User) -> dict:
                         "nombre": meal.nombre
                     })
 
-    for meal in comidas_completadas:
-        consumed_cal += (meal.calorias or 0)
-        m = meal.macros or {}
-        consumed_macros["carbohidratos_g"] += m.get("carbohidratos_g", 0)
-        consumed_macros["proteinas_g"] += m.get("proteinas_g", 0)
-        consumed_macros["grasas_g"] += m.get("grasas_g", 0)
-    
+    # 2. Solo extraemos los nombres para el historial (¡Ya no sumamos calorías aquí para no duplicar!)
     historial = [meal.nombre for meal in comidas_completadas]
     
     return {
         "fecha": str(hoy),
-        "calorias_consumidas": consumed_cal,
+        "calorias_consumidas": round(consumed_cal),
+        "calorias_objetivo_del_dia": round(meta_calorias), # 🌟 ¡El dato que pide el Front-end!
         "macros_consumidos": consumed_macros,
         "historial": historial,
-        "turnos_pendientes": turnos_pendientes # 🔥 Se lo enviamos al Front
+        "turnos_pendientes": turnos_pendientes
     }
 
 def procesar_y_guardar_ingesta(db: Session, current_user: User, data: IntakeSchema) -> dict:

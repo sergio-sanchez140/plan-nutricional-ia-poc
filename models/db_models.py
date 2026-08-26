@@ -151,3 +151,17 @@ class DailyHistory(Base):
     comidas = Column(JSON, default=[]) 
 
     user = relationship("User", backref="daily_histories")
+
+class WeightHistory(Base):
+    """
+    Registros del peso del usuario a lo largo del tiempo.
+    """
+    __tablename__ = "weight_histories"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    fecha = Column(Date, nullable=False, default=date.today, index=True)
+    peso = Column(Float, nullable=False)
+    created_at = Column(DateTime, server_default=func.now())
+
+    user = relationship("User", backref="weight_histories")
