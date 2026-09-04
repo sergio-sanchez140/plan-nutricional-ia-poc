@@ -113,16 +113,32 @@ def record_user_intake(db: Session, user: User, alimentos: List[Dict[str, Any]],
 
 
 def get_total_intake_for_date(db: Session, user: User, fecha: Optional[date] = None) -> Tuple[int, Dict[str, int]]:
-    from models.db_models import UserIntake
     fecha = fecha or date.today()
-    rows = db.query(UserIntake).filter(UserIntake.user_id == user.id, UserIntake.fecha == fecha).all()
-    total_cal = sum(r.calorias or 0 for r in rows)
+    
+    # 1. Buscar el plan actual del usuario (diario)
+    plan_actual = get_user_plan_by_type(db, user, "diario")
+    
+    total_cal = 0
     total_macros = {"carbohidratos_g": 0, "proteinas_g": 0, "grasas_g": 0}
-    for r in rows:
-        m = r.macros or {}
-        total_macros["carbohidratos_g"] += m.get("carbohidratos_g", 0)
-        total_macros["proteinas_g"] += m.get("proteinas_g", 0)
-        total_macros["grasas_g"] += m.get("grasas_g", 0)
+
+    if plan_actual:
+        # 2. Obtener todas las comidas completadas de ese plan
+        # Asumiendo dia == 1 por el POC (ajustable según lógica de calendarios futuros)
+        comidas_completadas = db.query(Meal).filter(
+            Meal.plan_id == plan_actual.id,
+            Meal.dia == 1,
+            Meal.completed == True
+        ).all()
+        
+        for meal in comidas_completadas:
+            total_cal += meal.calorias or 0
+            m = meal.macros or {}
+            
+            # Normalizar los nombres de los macros (maneja ambas convenciones por seguridad)
+            total_macros["carbohidratos_g"] += int(m.get("carbohidratos_g", m.get("carbohidratos", 0)))
+            total_macros["proteinas_g"] += int(m.get("proteinas_g", m.get("proteinas", 0)))
+            total_macros["grasas_g"] += int(m.get("grasas_g", m.get("grasas", 0)))
+
     return total_cal, total_macros
 
 

@@ -14,8 +14,6 @@ from datetime import datetime, date # Añade datetime a tus imports arriba
 
 def obtener_ingestas_hoy(db: Session, current_user: User) -> dict:
     hoy = date.today()
-    hora_actual = datetime.now().hour
-    TURNOS_HORAS = {"desayuno": 11, "almuerzo": 13, "comida": 16, "merienda": 19, "cena": 23}
     
     # 1. Obtenemos lo consumido (que ahora YA INCLUYE las comidas del plan completadas)
     consumed_cal, consumed_macros = get_total_intake_for_date(db, current_user, hoy)
@@ -26,7 +24,7 @@ def obtener_ingestas_hoy(db: Session, current_user: User) -> dict:
     meta_calorias = plan_actual.calorias if plan_actual else 2000
     
     comidas_completadas = []
-    turnos_pendientes = [] 
+    turnos_pendientes_set = set() # 🌟 Usamos un Set para no duplicar turnos (ej: si hay 2 platos en la cena)
     
     if plan_actual:
         todas_las_comidas = db.query(Meal).filter(Meal.plan_id == plan_actual.id, Meal.dia == 1).all()
@@ -35,25 +33,25 @@ def obtener_ingestas_hoy(db: Session, current_user: User) -> dict:
             if meal.completed:
                 comidas_completadas.append(meal)
             else:
-                # Si no está completada y ya pasó la hora, es un turno pendiente
-                hora_limite = TURNOS_HORAS.get(meal.turno, 23)
-                if hora_actual > hora_limite:
-                    turnos_pendientes.append({
-                        "id_comida": meal.id,
-                        "turno": meal.turno,
-                        "nombre": meal.nombre
-                    })
+                # 🌟 Cualquier comida no completada añade su turno a los pendientes
+                if meal.turno:
+                    turnos_pendientes_set.add(meal.turno.lower().strip())
 
-    # 2. Solo extraemos los nombres para el historial (¡Ya no sumamos calorías aquí para no duplicar!)
+    # 2. Solo extraemos los nombres para el historial
     historial = [meal.nombre for meal in comidas_completadas]
+    
+    # 3. Convertimos el Set a lista y ordenamos lógicamente para el Front-end
+    turnos_pendientes = list(turnos_pendientes_set)
+    orden_turnos = {"desayuno": 1, "almuerzo": 2, "comida": 3, "merienda": 4, "cena": 5, "extra": 6}
+    turnos_pendientes.sort(key=lambda t: orden_turnos.get(t, 99))
     
     return {
         "fecha": str(hoy),
         "calorias_consumidas": round(consumed_cal),
-        "calorias_objetivo_del_dia": round(meta_calorias), # 🌟 ¡El dato que pide el Front-end!
+        "calorias_objetivo_del_dia": round(meta_calorias),
         "macros_consumidos": consumed_macros,
         "historial": historial,
-        "turnos_pendientes": turnos_pendientes
+        "turnos_pendientes": turnos_pendientes # 🌟 Ahora devuelve ej: ["merienda", "cena"]
     }
 
 def procesar_y_guardar_ingesta(db: Session, current_user: User, data: IntakeSchema) -> dict:
